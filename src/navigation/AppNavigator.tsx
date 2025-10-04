@@ -10,6 +10,9 @@ import { ProfileSetupScreen } from '../screens/ProfileSetupScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { GroupDetailsScreen } from '../screens/GroupDetailsScreen';
 import { theme } from '../styles/theme';
+import { SearchScreen } from '../screens/SearchScreen';
+import { MyGroupsScreen } from '../screens/MyGroupsScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 
 // We'll add more screens as we build them
 // import { ProfileSetupScreen } from '../screens/ProfileSetupScreen';
@@ -81,38 +84,31 @@ const MainTabs: React.FC = () => (
       headerShown: false,
     }}
   >
-    <Tab.Screen 
-      name="Dashboard" 
-      component={DashboardScreen}
-      options={{
-        tabBarLabel: 'Home',
-        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🏠</Text>,
-      }}
-    />
-    <Tab.Screen 
-      name="Search" 
-      component={() => <PlaceholderScreen title="Search" />}
-      options={{
-        tabBarLabel: 'Search',
-        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🔍</Text>,
-      }}
-    />
-    <Tab.Screen 
-      name="MyGroups" 
-      component={() => <PlaceholderScreen title="My Groups" />}
-      options={{
-        tabBarLabel: 'My Groups',
-        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👥</Text>,
-      }}
-    />
-    <Tab.Screen 
-      name="Profile" 
-      component={() => <PlaceholderScreen title="Profile" />}
-      options={{
-        tabBarLabel: 'Profile',
-        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👤</Text>,
-      }}
-    />
+      
+  <Tab.Screen 
+    name="Search" 
+    component={SearchScreen}  // Changed from PlaceholderScreen
+    options={{
+      tabBarLabel: 'Search',
+      tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🔍</Text>,
+    }}
+  />
+  <Tab.Screen 
+    name="MyGroups" 
+    component={MyGroupsScreen}  // Changed from PlaceholderScreen
+    options={{
+      tabBarLabel: 'My Groups',
+      tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👥</Text>,
+    }}
+  />
+  <Tab.Screen 
+    name="Profile" 
+    component={ProfileScreen}  // Changed from PlaceholderScreen
+    options={{
+      tabBarLabel: 'Profile',
+      tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👤</Text>,
+    }}
+  />
   </Tab.Navigator>
 );
 

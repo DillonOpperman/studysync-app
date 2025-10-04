@@ -69,4 +69,26 @@ export class RealAIService {
       return false;
     }
   }
+
+  static async searchGroups(query: string): Promise<MatchRecommendation[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.results || [];
+    } catch (error) {
+      console.error('Error searching groups:', error);
+      return [];
+    }
+  }
 }
