@@ -60,6 +60,10 @@ yarn ios
 
 If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
 
+Notes:
+
+Make sure you have node.js isntalled on your pc otherwise the npx commands will not work. I did not use Yarn, research would be needed if you had any preference to go that direction. Also do not do what I did and install React and not React Native as basic React is web based. 
+
 
 
 
