@@ -1,5 +1,5 @@
 import { StudentProfile } from '../types/Profile';
-import { MatchRecommendation } from './MockMatchingService';
+import { MatchRecommendation } from '../types/Matching.ts';
 
 export class RealAIService {
   // Change this to your deployed backend URL, or keep localhost for testing
@@ -30,35 +30,39 @@ export class RealAIService {
     }
   }
 
+  
   static async getRecommendations(profile: StudentProfile): Promise<MatchRecommendation[]> {
-    try {
-      const response = await fetch(`${this.baseURL}/api/recommend`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          student_data: profile
-        }),
-      });
+  try {
+    const response = await fetch(`${this.baseURL}/api/recommend`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        student_data: profile
+      }),
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        return result.recommendations;
-      } else {
-        throw new Error(result.error || 'Failed to get recommendations');
-      }
-    } catch (error) {
-      console.error('Error getting recommendations:', error);
-      // Return empty array instead of throwing, so app doesn't crash
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Backend error:', errorText);
       return [];
     }
+
+    const result = await response.json();
+    
+    if (result.success) {
+      return result.recommendations;
+    } else {
+      console.error('API returned success: false', result.error);
+      return [];
+    }
+  } catch (error) {
+    console.error('Error getting recommendations:', error);
+    return [];
   }
+}
 
   static async checkHealth(): Promise<boolean> {
     try {

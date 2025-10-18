@@ -1,13 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StudentProfile } from '../types/Profile';
-import { MatchRecommendation } from './MockMatchingService';
+import { MatchRecommendation } from '../types/Matching';
 
 export class StorageService {
   private static readonly KEYS = {
     USER_PROFILE: 'user_profile',
     RECENT_MATCHES: 'recent_matches',
     USER_ID: 'user_id',
-    ONBOARDING_COMPLETED: 'onboarding_completed'
+    ONBOARDING_COMPLETED: 'onboarding_completed',
+    MY_GROUPS: 'my_groups'
   };
 
   // Profile Management
@@ -92,6 +93,26 @@ export class StorageService {
     }
   }
 
+  // Groups Management
+  static async saveGroups(groups: any[]): Promise<void> {
+    try {
+      await AsyncStorage.setItem(this.KEYS.MY_GROUPS, JSON.stringify(groups));
+      console.log(`Saved ${groups.length} groups`);
+    } catch (error) {
+      console.error('Error saving groups:', error);
+    }
+  }
+
+  static async getGroups(): Promise<any[]> {
+    try {
+      const data = await AsyncStorage.getItem(this.KEYS.MY_GROUPS);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error('Error retrieving groups:', error);
+      return [];
+    }
+  }
+
   // Onboarding Status
   static async isOnboardingCompleted(): Promise<boolean> {
     try {
@@ -128,7 +149,14 @@ export class StorageService {
       const info: {[key: string]: any} = {};
       
       items.forEach(([key, value]) => {
-        info[key] = value ? JSON.parse(value) : null;
+        try {
+          // Safely parse JSON - if it fails, store the raw value
+          info[key] = value ? JSON.parse(value) : null;
+        } catch (parseError) {
+          // If JSON parse fails, store as raw string or null
+          console.warn(`Could not parse ${key}, storing as raw value`, parseError);
+          info[key] = value || null;
+        }
       });
       
       return info;

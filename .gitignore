@@ -7,3 +7,6 @@ android/app/build/
 android/build/
 ios/Pods/
 ios/build/
+cd
+cmd.exe
+npx

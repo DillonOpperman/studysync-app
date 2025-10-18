@@ -15,9 +15,7 @@ import { Button } from '../components/Button';
 import { theme } from '../styles/theme';
 import { StorageService } from '../services/StorageService';
 import { RealAIService } from '../services/RealAIService';
-import { MatchRecommendation } from '../services/MockMatchingService'; // Keep the type
-
-
+import { MatchRecommendation } from '../types/Matching'; // FIXED: Import from correct location
 
 interface DashboardScreenProps {
   navigation: any;
@@ -26,7 +24,8 @@ interface DashboardScreenProps {
 const MatchCard: React.FC<{
   group: MatchRecommendation;
   onPress: () => void;
-}> = ({ group, onPress }) => (
+  onActionPress: () => void;
+}> = ({ group, onPress, onActionPress }) => (
   <TouchableOpacity style={[styles.matchCard, group.suggested && styles.suggestedCard]} onPress={onPress}>
     <View style={styles.matchHeader}>
       <Text style={styles.matchTitle}>{group.title}</Text>
@@ -43,7 +42,7 @@ const MatchCard: React.FC<{
     
     <View style={styles.matchInfo}>
       <Text style={styles.matchInfoText}>• {group.memberInfo}</Text>
-      {group.schedule && <Text style={styles.matchInfoText}>• Meets: {group.schedule}</Text>}
+      {group.schedule && <Text style={styles.matchInfoText}>• {group.schedule}</Text>}
       {group.focus && <Text style={styles.matchInfoText}>• Focus: {group.focus}</Text>}
       {group.location && <Text style={styles.matchInfoText}>• Location: {group.location}</Text>}
     </View>
@@ -58,7 +57,7 @@ const MatchCard: React.FC<{
       variant={group.suggested ? 'secondary' : 'success'}
       size="small"
       style={styles.matchButton}
-      onPress={() => alert(`${group.action}\n\n${group.title}\n\n${group.explanation}\n\n${group.suggested ? 'Ready to start your own study group?' : 'Request sent! You will be notified when the group leader responds.'}`)}
+      onPress={onActionPress}
     />
   </TouchableOpacity>
 );
@@ -96,27 +95,29 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
       if (profile) {
         setUserName(profile.name || 'Student');
         
-        // Try to get cached matches first
-        const cachedMatches = await StorageService.getMatches();
-        if (cachedMatches.length > 0) {
-          setMatches(cachedMatches);
-          setLoading(false);
-        }
-        
-        // Generate fresh recommendations
+        // Generate fresh recommendations from backend
         const freshRecommendations = await RealAIService.getRecommendations(profile);
-        setMatches(freshRecommendations);
         
-        // Cache the fresh matches
-        await StorageService.saveMatches(freshRecommendations);
+        console.log('Recommendations received:', freshRecommendations); // Debug log
+        
+        if (freshRecommendations && freshRecommendations.length > 0) {
+          setMatches(freshRecommendations);
+          await StorageService.saveMatches(freshRecommendations);
+        } else {
+          // No matches from backend - show create group option only
+          setMatches(getCreateGroupSuggestion(profile));
+        }
       } else {
-        // No profile found, fallback to static data
-        const staticMatches = getStaticMatches();
-        setMatches(staticMatches);
+        // No profile found
+        setMatches([]);
       }
     } catch (error) {
       console.error('Error loading matches:', error);
-      setMatches(getStaticMatches());
+      // On error, suggest creating a group
+      const profile = await StorageService.getProfile();
+      if (profile) {
+        setMatches(getCreateGroupSuggestion(profile));
+      }
     } finally {
       setLoading(false);
     }
@@ -128,48 +129,34 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
     setRefreshing(false);
   };
 
-  const getStaticMatches = (): MatchRecommendation[] => {
+  const getCreateGroupSuggestion = (profile: any): MatchRecommendation[] => {
     return [
       {
         id: 1,
-        title: 'Math 220 Study Group',
-        matchPercentage: 95,
-        memberInfo: '4 members, needs 2 more',
-        schedule: 'Mon/Wed 6-8 PM',
-        focus: 'Calculus exam prep',
-        location: 'Library Study Room B',
-        action: 'Request to Join',
-        suggested: false,
-        explanation: 'High compatibility based on course enrollment and schedule',
-        compatibility: { subject: 0.9, schedule: 0.8, learningStyle: 0.7, performance: 0.8 }
-      },
-      {
-        id: 2,
-        title: 'CS 101 Project Team',
-        matchPercentage: 88,
-        memberInfo: '3 members, needs 1 more',
-        schedule: 'Tues/Thu 4-6 PM',
-        focus: 'Final project',
-        location: 'Computer Lab',
-        action: 'Request to Join',
-        suggested: false,
-        explanation: 'Good match for collaborative coding projects',
-        compatibility: { subject: 0.8, schedule: 0.7, learningStyle: 0.8, performance: 0.7 }
-      },
-      {
-        id: 3,
-        title: 'Create Your Own Group',
+        title: 'Create Your Own Study Group',
         matchPercentage: null,
-        memberInfo: 'Based on your activity, you could lead a study group.',
-        schedule: 'Several students are looking for group leaders!',
-        focus: '',
-        location: '',
+        memberInfo: 'No existing groups match your profile yet.',
+        schedule: 'Set your own schedule and location',
+        focus: profile.subjects?.join(', ') || 'Your subjects',
+        location: 'Choose your preferred study location',
         action: 'Start Group',
         suggested: true,
-        explanation: 'Perfect opportunity to start your own study group',
+        explanation: `Be the first to start a ${profile.major || 'study'} group! Other students with similar interests are looking for groups to join.`,
         compatibility: { subject: 1.0, schedule: 1.0, learningStyle: 1.0, performance: 1.0 }
       }
     ];
+  };
+
+  const handleMatchAction = (match: MatchRecommendation) => {
+    if (match.suggested) {
+      // Navigate to MyGroups and open create modal
+      navigation.navigate('MyGroups', { openCreateModal: true });
+    } else {
+      // Join group action
+      alert(
+        `Request to Join\n\n${match.title}\n\n${match.explanation}\n\nRequest sent! You will be notified when the group leader responds.`
+      );
+    }
   };
 
   return (
@@ -204,24 +191,32 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
           ) : matches.length > 0 ? (
             <>
               <Text style={styles.matchesFoundText}>
-                Found {matches.length} matches based on your profile
+                {matches.filter(m => !m.suggested).length > 0 
+                  ? `Found ${matches.filter(m => !m.suggested).length} compatible study groups` 
+                  : 'Ready to create your first study group?'}
               </Text>
               {matches.map((match) => (
                 <MatchCard
                   key={match.id}
                   group={match}
-                  onPress={() => alert(`${match.title}\n\n${match.matchPercentage ? match.matchPercentage + '% Match' : 'Suggested Group'}\n\nDetails:\n• ${match.memberInfo}\n• Schedule: ${match.schedule}\n• Focus: ${match.focus}\n• Location: ${match.location}\n\nTap '${match.action}' to proceed!`)}
+                  onPress={() => {
+                    const details = match.matchPercentage 
+                      ? `${match.title}\n\n${match.matchPercentage}% Match\n\nDetails:\n• ${match.memberInfo}\n• Schedule: ${match.schedule}\n• Focus: ${match.focus}\n• Location: ${match.location}\n\n${match.explanation}`
+                      : `${match.title}\n\n${match.explanation}\n\n• ${match.memberInfo}\n• ${match.schedule}\n• Subjects: ${match.focus}`;
+                    alert(details);
+                  }}
+                  onActionPress={() => handleMatchAction(match)}
                 />
               ))}
             </>
           ) : (
             <View style={styles.noMatchesContainer}>
-              <Text style={styles.noMatchesTitle}>No matches found yet</Text>
+              <Text style={styles.noMatchesTitle}>No profile found</Text>
               <Text style={styles.noMatchesText}>
                 Complete your profile setup to get personalized study group recommendations
               </Text>
               <Button
-                title="Update Profile"
+                title="Setup Profile"
                 onPress={() => navigation.navigate('ProfileSetup')}
                 style={styles.updateProfileButton}
               />

@@ -12,6 +12,7 @@ import {
   ViewStyle,
   TextStyle,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { theme } from '../styles/theme';
 import { StorageService } from '../services/StorageService';
@@ -21,6 +22,7 @@ import { StudyGroup, JoinedGroup } from '../types/Matching';
 
 interface MyGroupsScreenProps {
   navigation: any;
+  route?: any;
 }
 
 const GroupCard: React.FC<{
@@ -64,7 +66,7 @@ const GroupCard: React.FC<{
   </TouchableOpacity>
 );
 
-export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation }) => {
+export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, route }) => {
   const [groups, setGroups] = useState<JoinedGroup[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,14 +81,18 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation }) =>
 
   useEffect(() => {
     loadGroups();
-  }, []);
+
+    // Check if we should open create modal (coming from Dashboard)
+    if (route?.params?.openCreateModal) {
+      setShowCreateModal(true);
+    }
+  }, [route?.params?.openCreateModal]);
 
   const loadGroups = async () => {
     try {
-      // Load from storage
-      const storedGroups = await StorageService.getStorageInfo();
-      const myGroups = storedGroups['my_groups'] || [];
-      setGroups(myGroups);
+      // Load from storage using new helper
+      const myGroups = await StorageService.getGroups();
+      setGroups(myGroups || []);
     } catch (error) {
       console.error('Error loading groups:', error);
     }
@@ -100,7 +106,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation }) =>
 
   const handleCreateGroup = async () => {
     if (!groupTitle.trim() || !groupSubject.trim()) {
-      alert('Please fill in at least the group title and subject');
+      Alert.alert('Missing fields', 'Please fill in at least the group title and subject');
       return;
     }
 
@@ -114,7 +120,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation }) =>
         description: groupDescription,
         schedule: groupSchedule || 'Flexible',
         location: groupLocation || 'TBD',
-        maxMembers: parseInt(maxMembers) || 6,
+  maxMembers: parseInt(maxMembers, 10) || 6,
         currentMembers: 1,
         members: [
           {
@@ -135,10 +141,10 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation }) =>
         status: 'active',
       };
 
-      // Save to storage
-      const updatedGroups = [...groups, joinedGroup];
-      await StorageService.saveMatches(updatedGroups as any);
-      setGroups(updatedGroups);
+  // Save to storage using new helper
+  const updatedGroups = [...groups, joinedGroup];
+  await StorageService.saveGroups(updatedGroups);
+  setGroups(updatedGroups);
 
       // Reset form
       setGroupTitle('');
@@ -149,23 +155,17 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation }) =>
       setMaxMembers('6');
       setShowCreateModal(false);
 
-      alert(`Group "${groupTitle}" created successfully!\n\nYou are now the group leader. Other students can find and join your group through search.`);
+  Alert.alert('Group created', `Group "${groupTitle}" created successfully!\n\nYou are now the group leader. Other students can find and join your group through search.`);
     } catch (error) {
       console.error('Error creating group:', error);
-      alert('Failed to create group. Please try again.');
+  Alert.alert('Create failed', 'Failed to create group. Please try again.');
     }
   };
 
   const handleGroupPress = (group: JoinedGroup) => {
-    alert(
-      `${group.group.title}\n\n` +
-      `Subject: ${group.group.subject}\n` +
-      `Leader: ${group.group.leader}\n` +
-      `Members: ${group.group.currentMembers}/${group.group.maxMembers}\n` +
-      `Schedule: ${group.group.schedule}\n` +
-      `Location: ${group.group.location}\n\n` +
-      `${group.group.description || 'No description provided.'}\n\n` +
-      `Status: ${group.status === 'active' ? 'You are an active member' : 'Pending approval'}`
+    Alert.alert(
+      group.group.title,
+      `${group.group.subject}\n\nLeader: ${group.group.leader}\nMembers: ${group.group.currentMembers}/${group.group.maxMembers}\nSchedule: ${group.group.schedule}\nLocation: ${group.group.location}\n\n${group.group.description || 'No description provided.'}\n\nStatus: ${group.status === 'active' ? 'You are an active member' : 'Pending approval'}`
     );
   };
 
@@ -261,7 +261,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation }) =>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Create Study Group</Text>
-            <View style={{ width: 60 }} />
+            <View style={styles.headerSpacer} />
           </View>
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
@@ -475,6 +475,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     backgroundColor: theme.colors.white,
+  } as ViewStyle,
+  headerSpacer: {
+    width: 60,
   } as ViewStyle,
   cancelText: {
     fontSize: 16,

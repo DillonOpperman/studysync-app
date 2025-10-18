@@ -14,14 +14,6 @@ import { SearchScreen } from '../screens/SearchScreen';
 import { MyGroupsScreen } from '../screens/MyGroupsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 
-// We'll add more screens as we build them
-// import { ProfileSetupScreen } from '../screens/ProfileSetupScreen';
-// import { DashboardScreen } from '../screens/DashboardScreen';
-// import { SearchScreen } from '../screens/SearchScreen';
-// import { GroupDetailsScreen } from '../screens/GroupDetailsScreen';
-// import { MyGroupsScreen } from '../screens/MyGroupsScreen';
-// import { ProfileScreen } from '../screens/ProfileScreen';
-
 // Stack Navigator Types
 export type RootStackParamList = {
   Welcome: undefined;
@@ -34,7 +26,7 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Dashboard: undefined;
   Search: undefined;
-  MyGroups: undefined;
+  MyGroups: { openCreateModal?: boolean };
   Profile: undefined;
 };
 
@@ -63,13 +55,6 @@ export type MainTabRouteProp<T extends keyof MainTabParamList> = RouteProp<
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Placeholder screens for now
-const PlaceholderScreen = ({ title }: { title: string }) => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#faf8f6' }}>
-    <Text style={{ fontSize: 18, color: '#8b4513' }}>{title} - Coming Soon</Text>
-  </View>
-);
-
 const MainTabs: React.FC = () => (
   <Tab.Navigator
     screenOptions={{
@@ -84,31 +69,38 @@ const MainTabs: React.FC = () => (
       headerShown: false,
     }}
   >
-      
-  <Tab.Screen 
-    name="Search" 
-    component={SearchScreen}  // Changed from PlaceholderScreen
-    options={{
-      tabBarLabel: 'Search',
-      tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🔍</Text>,
-    }}
-  />
-  <Tab.Screen 
-    name="MyGroups" 
-    component={MyGroupsScreen}  // Changed from PlaceholderScreen
-    options={{
-      tabBarLabel: 'My Groups',
-      tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👥</Text>,
-    }}
-  />
-  <Tab.Screen 
-    name="Profile" 
-    component={ProfileScreen}  // Changed from PlaceholderScreen
-    options={{
-      tabBarLabel: 'Profile',
-      tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👤</Text>,
-    }}
-  />
+    <Tab.Screen 
+      name="Dashboard" 
+      component={DashboardScreen}
+      options={{
+        tabBarLabel: 'Home',
+        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🏠</Text>,
+      }}
+    />
+    <Tab.Screen 
+      name="Search" 
+      component={SearchScreen}
+      options={{
+        tabBarLabel: 'Search',
+        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🔍</Text>,
+      }}
+    />
+    <Tab.Screen 
+      name="MyGroups" 
+      component={MyGroupsScreen}
+      options={{
+        tabBarLabel: 'My Groups',
+        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👥</Text>,
+      }}
+    />
+    <Tab.Screen 
+      name="Profile" 
+      component={ProfileScreen}
+      options={{
+        tabBarLabel: 'Profile',
+        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👤</Text>,
+      }}
+    />
   </Tab.Navigator>
 );
 
