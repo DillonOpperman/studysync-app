@@ -163,10 +163,15 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
   };
 
   const handleGroupPress = (group: JoinedGroup) => {
-    Alert.alert(
-      group.group.title,
-      `${group.group.subject}\n\nLeader: ${group.group.leader}\nMembers: ${group.group.currentMembers}/${group.group.maxMembers}\nSchedule: ${group.group.schedule}\nLocation: ${group.group.location}\n\n${group.group.description || 'No description provided.'}\n\nStatus: ${group.status === 'active' ? 'You are an active member' : 'Pending approval'}`
-    );
+    if (group.status === 'active') {
+      // Navigate to group chat
+      navigation.navigate('GroupChat', { group });
+    } else {
+      Alert.alert(
+        group.group.title,
+        `Status: Pending approval\n\nYour request to join this group is waiting for approval from the group leader.`
+      );
+    }
   };
 
   return (

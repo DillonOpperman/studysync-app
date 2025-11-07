@@ -26,6 +26,16 @@ interface ProfileSetupScreenProps {
   navigation: RootStackNavigationProp<'ProfileSetup'>;
 }
 
+// Helper functions at top level
+const validateEmailFormat = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const isEduEmail = (email: string): boolean => {
+  return email.toLowerCase().endsWith('.edu');
+};
+
 export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigation }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -65,6 +75,89 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
     }));
   };
 
+  const validateCurrentStep = (): boolean => {
+    switch (currentStep) {
+      case 1:
+        // Check all basic fields are filled
+        if (!profileData.name?.trim()) return false;
+        if (!profileData.email?.trim()) return false;
+        if (!profileData.university?.trim()) return false;
+        if (!profileData.major) return false;
+        if (!profileData.year) return false;
+        
+        // Validate email format
+        if (!validateEmailFormat(profileData.email)) return false;
+        if (!isEduEmail(profileData.email)) return false;
+        
+        // Validate name length
+        if (profileData.name.trim().length < 2) return false;
+        
+        return true;
+        
+      case 2:
+        return !!(profileData.learningStyle && profileData.subjects && profileData.subjects.length > 0);
+        
+      case 3:
+        const hasSchedule = Object.values(profileData.schedule || {}).some(slots => slots.length > 0);
+        return hasSchedule;
+        
+      case 4:
+        return !!(profileData.groupPreferences?.studyGoals && profileData.groupPreferences.studyGoals.length > 0);
+        
+      default:
+        return true;
+    }
+  };
+
+  const getValidationMessage = (): string => {
+    switch (currentStep) {
+      case 1:
+        if (!profileData.name?.trim()) {
+          return 'Please enter your name';
+        }
+        if (profileData.name.trim().length < 2) {
+          return 'Name must be at least 2 characters';
+        }
+        if (!profileData.email?.trim()) {
+          return 'Please enter your email address';
+        }
+        if (!validateEmailFormat(profileData.email)) {
+          return 'Please enter a valid email address';
+        }
+        if (!isEduEmail(profileData.email)) {
+          return 'Please use your .edu email address to verify you\'re a student';
+        }
+        if (!profileData.university?.trim()) {
+          return 'Please enter your university';
+        }
+        if (!profileData.major) {
+          return 'Please select your major';
+        }
+        if (!profileData.year) {
+          return 'Please select your academic year';
+        }
+        return 'Please fill in all required fields';
+        
+      case 2:
+        if (!profileData.learningStyle?.trim()) {
+          return 'Please describe your learning style';
+        }
+        if (!profileData.subjects || profileData.subjects.length === 0) {
+          return 'Please select at least one subject';
+        }
+        return 'Please complete all fields';
+        
+      case 3:
+        return 'Please select at least one available time slot';
+        
+      case 4:
+        return 'Please select at least one study goal';
+        
+      default:
+        return '';
+    }
+  };
+
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
@@ -95,66 +188,38 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
       // Save profile locally
       await StorageService.saveProfile(completeProfile);
       
-      // Send to mock backend and get initial recommendations
+      // Send to backend and get initial recommendations
       const result = await RealAIService.createProfile(completeProfile);
+      
+      if (!result.success) {
+        // Show validation errors from backend
+        if (result.errors && result.errors.length > 0) {
+          const errorMessage = `${result.message}\n\n• ${result.errors.join('\n• ')}`;
+          alert(errorMessage);
+        } else {
+          alert(result.message || 'Failed to create profile. Please try again.');
+        }
+        return;
+      }
+      
       const recommendations = await RealAIService.getRecommendations(completeProfile);
       
       // Save initial matches
       await StorageService.saveMatches(recommendations);
       
-      if (result.success) {
-        // Show success message with match count
-        alert(`Welcome to StudySync!\n\n${result.message}\n\nFound ${recommendations.length} potential matches based on your profile!`);
-        navigation.navigate('Main');
-      } else {
-        throw new Error('Failed to create profile');
-      }
+      // Show success message with match count
+      const matchCount = recommendations.filter(r => !r.suggested).length;
+      const successMessage = matchCount > 0
+        ? `Welcome to StudySync!\n\n${result.message}\n\nFound ${matchCount} compatible study groups based on your profile!`
+        : `Welcome to StudySync!\n\n${result.message}\n\nNo existing groups match your profile yet, but you can create your own!`;
+      
+      alert(successMessage);
+      navigation.navigate('Main');
     } catch (error) {
       console.error('Error completing setup:', error);
-      alert('Error saving profile. Please try again.');
+      alert('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 1: return 'Tell us about yourself';
-      case 2: return 'How do you learn best?';
-      case 3: return 'When are you available?';
-      case 4: return 'Study preferences';
-      default: return 'Set up your profile';
-    }
-  };
-
-  const validateCurrentStep = (): boolean => {
-    switch (currentStep) {
-      case 1:
-        return !!(profileData.name && profileData.email && profileData.university && profileData.major && profileData.year);
-      case 2:
-        return !!(profileData.learningStyle && profileData.subjects && profileData.subjects.length > 0);
-      case 3:
-        const hasSchedule = Object.values(profileData.schedule || {}).some(slots => slots.length > 0);
-        return hasSchedule;
-      case 4:
-        return !!(profileData.groupPreferences?.studyGoals && profileData.groupPreferences.studyGoals.length > 0);
-      default:
-        return true;
-    }
-  };
-
-  const getValidationMessage = (): string => {
-    switch (currentStep) {
-      case 1:
-        return 'Please fill in all basic information fields';
-      case 2:
-        return 'Please describe your learning style and select at least one subject';
-      case 3:
-        return 'Please select at least one available time slot';
-      case 4:
-        return 'Please select at least one study goal';
-      default:
-        return '';
     }
   };
 
@@ -171,6 +236,16 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
       } else {
         alert(getValidationMessage());
       }
+    }
+  };
+
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 1: return 'Tell us about yourself';
+      case 2: return 'How do you learn best?';
+      case 3: return 'When are you available?';
+      case 4: return 'Study preferences';
+      default: return 'Set up your profile';
     }
   };
 

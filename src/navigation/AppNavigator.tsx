@@ -9,10 +9,13 @@ import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { ProfileSetupScreen } from '../screens/ProfileSetupScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { GroupDetailsScreen } from '../screens/GroupDetailsScreen';
+import { GroupChatScreen } from '../screens/GroupChatScreen';
+import { GroupInfoScreen } from '../screens/GroupInfoScreen';
 import { theme } from '../styles/theme';
 import { SearchScreen } from '../screens/SearchScreen';
 import { MyGroupsScreen } from '../screens/MyGroupsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { JoinedGroup } from '../types/Matching';
 
 // Stack Navigator Types
 export type RootStackParamList = {
@@ -20,6 +23,8 @@ export type RootStackParamList = {
   ProfileSetup: undefined;
   Main: undefined;
   GroupDetails: { groupId?: string };
+  GroupChat: { group: JoinedGroup };
+  GroupInfo: { group: JoinedGroup };
 };
 
 // Tab Navigator Types
@@ -114,6 +119,8 @@ export const AppNavigator: React.FC = () => (
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} />
+      <Stack.Screen name="GroupChat" component={GroupChatScreen} />
+      <Stack.Screen name="GroupInfo" component={GroupInfoScreen} />
     </Stack.Navigator>
   </NavigationContainer>
 );
