@@ -581,7 +581,7 @@ For questions, issues, or contributions:
 
 ##  Related Repositories
 
-- **Backend Repository:** [study-group-matcher-backend](https://github.com/DillonOpperman/study-group-matcher-backend)
+- **Backend Repository:** [study-group-matcher-backend](https://github.com/DillonOpperman/studysync-backend)
 - **Project Documentation:** [See Backend README](https://github.com/DillonOpperman/studysync-backend/blob/main/README.md)
 
 ---
