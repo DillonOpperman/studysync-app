@@ -1,5 +1,3 @@
-Here is the complete, cleaned-up Markdown code for your **front-end `README.md`** file, incorporating all your notes and following professional formatting. You can copy this entire block and paste it directly into your file.
-
 ````markdown
 # StudySync Frontend 
 
