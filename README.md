@@ -16,8 +16,6 @@ This is the **React Native** mobile application for StudySync, an AI-powered stu
 - [Key Components](#key-components)
 - [Backend Integration](#backend-integration)
 - [Troubleshooting](#troubleshooting)
-- [Documentation Videos](#documentation-videos)
-- [Screenshots](#screenshots)
 - [License](#license)
 - [Author](#author)
 - [Acknowledgements](#acknowledgements)
@@ -575,16 +573,16 @@ This project was made possible thanks to the following open-source projects and 
 
 For questions, issues, or contributions:
 
-1. **Issues:** Open an issue on [GitHub Issues](https://github.com/YOUR_USERNAME/StudySyncAppFresh/issues)
+1. **Issues:** Open an issue on [GitHub Issues](https://github.com/DillonOpperman/studysync-app/issues)
 2. **Email:** Contact dlopper@ilstu.edu
 3. **Documentation:** Refer to the sections above
 
 ---
 
-## 🔗 Related Repositories
+##  Related Repositories
 
 - **Backend Repository:** [study-group-matcher-backend](https://github.com/DillonOpperman/study-group-matcher-backend)
-- **Project Documentation:** [See Backend README](https://github.com/DillonOpperman/study-group-matcher-backend/blob/main/README.md)
+- **Project Documentation:** [See Backend README](https://github.com/DillonOpperman/studysync-backend/blob/main/README.md)
 
 ---
 
