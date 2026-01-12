@@ -1,3 +1,4 @@
+// src/navigation/AppNavigator.tsx
 import React from 'react';
 import { Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -6,25 +7,28 @@ import { createBottomTabNavigator, BottomTabNavigationProp } from '@react-naviga
 import { RouteProp } from '@react-navigation/native';
 
 import { WelcomeScreen } from '../screens/WelcomeScreen';
+import { LoginScreen } from '../screens/LoginScreen';
 import { ProfileSetupScreen } from '../screens/ProfileSetupScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
-import { GroupDetailsScreen } from '../screens/GroupDetailsScreen';
 import { GroupChatScreen } from '../screens/GroupChatScreen';
 import { GroupInfoScreen } from '../screens/GroupInfoScreen';
 import { theme } from '../styles/theme';
 import { SearchScreen } from '../screens/SearchScreen';
 import { MyGroupsScreen } from '../screens/MyGroupsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { ProfileEditScreen } from '../screens/ProfileEditScreen';
+import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { JoinedGroup } from '../types/Matching';
 
 // Stack Navigator Types
 export type RootStackParamList = {
   Welcome: undefined;
+  Login: undefined;
   ProfileSetup: undefined;
   Main: undefined;
-  GroupDetails: { groupId?: string };
   GroupChat: { group: JoinedGroup };
   GroupInfo: { group: JoinedGroup };
+  UserProfile: { userId: string };
 };
 
 // Tab Navigator Types
@@ -74,32 +78,32 @@ const MainTabs: React.FC = () => (
       headerShown: false,
     }}
   >
-    <Tab.Screen 
-      name="Dashboard" 
+    <Tab.Screen
+      name="Dashboard"
       component={DashboardScreen}
       options={{
         tabBarLabel: 'Home',
         tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🏠</Text>,
       }}
     />
-    <Tab.Screen 
-      name="Search" 
+    <Tab.Screen
+      name="Search"
       component={SearchScreen}
       options={{
         tabBarLabel: 'Search',
         tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🔍</Text>,
       }}
     />
-    <Tab.Screen 
-      name="MyGroups" 
+    <Tab.Screen
+      name="MyGroups"
       component={MyGroupsScreen}
       options={{
         tabBarLabel: 'My Groups',
         tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👥</Text>,
       }}
     />
-    <Tab.Screen 
-      name="Profile" 
+    <Tab.Screen
+      name="Profile"
       component={ProfileScreen}
       options={{
         tabBarLabel: 'Profile',
@@ -111,16 +115,22 @@ const MainTabs: React.FC = () => (
 
 export const AppNavigator: React.FC = () => (
   <NavigationContainer>
-    <Stack.Navigator 
+    <Stack.Navigator
       initialRouteName="Welcome"
       screenOptions={{ headerShown: false }}
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="Main" component={MainTabs} />
-      <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} />
       <Stack.Screen name="GroupChat" component={GroupChatScreen} />
       <Stack.Screen name="GroupInfo" component={GroupInfoScreen} />
+      <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+      <Stack.Screen 
+        name="UserProfile" 
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   </NavigationContainer>
 );

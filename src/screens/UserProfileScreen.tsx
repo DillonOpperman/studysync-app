@@ -1,4 +1,3 @@
-// src/screens/ProfileScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -9,97 +8,69 @@ import {
   StatusBar,
   ViewStyle,
   TextStyle,
-  Alert,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../styles/theme';
 import { RealAIService } from '../services/RealAIService';
-import { RootStackParamList } from '../navigation/AppNavigator';
-import { StackNavigationProp } from '@react-navigation/stack';
 
-type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
-
-interface Props {
-  navigation: ProfileScreenNavigationProp;
+interface UserProfileScreenProps {
+  navigation: any;
+  route: {
+    params: {
+      userId: string;
+    };
+  };
 }
 
-export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const [profile, setProfile] = useState<any>(null);
+export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation, route }) => {
+  const { userId } = route.params;
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    loadUserProfile();
+  }, [userId]);
 
-  const loadProfile = async () => {
+  const loadUserProfile = async () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await RealAIService.getProfile();
+      const result = await RealAIService.getUserProfile(userId);
       
       if (result.success && result.user) {
-        console.log('Profile loaded:', result.user);
-        setProfile(result.user);
+        setUser(result.user);
       } else {
-        setError('Failed to load profile');
+        setError('Failed to load user profile');
       }
     } catch (err) {
-      console.error('Error loading profile:', err);
-      setError('Failed to load profile');
+      console.error('Error loading user profile:', err);
+      setError('Failed to load user profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
+  const handleSendFriendRequest = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      'Send Friend Request',
+      `Send a friend request to ${user.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await RealAIService.logout();
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Welcome' }],
-              });
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to logout');
-            }
-          },
-        },
+          text: 'Send',
+          onPress: () => {
+            Alert.alert('Coming Soon', 'Friend request feature will be available soon!');
+          }
+        }
       ]
     );
   };
 
-  const handleEditProfile = () => {
-    if (profile) {
-      // Convert backend profile format to StudentProfile format
-      const studentProfile: any = {
-        id: profile.id,
-        name: profile.name,
-        email: profile.email,
-        university: profile.university || 'Unknown',
-        major: profile.major,
-        year: profile.year,
-        subjects: Array.isArray(profile.subjects) ? profile.subjects : [],
-        learningStyle: profile.learning_style || '',
-        studyEnvironments: [],
-        studyMethods: [],
-        schedule: profile.schedule || {},
-        performanceLevel: profile.performance_level || 3,
-        groupPreferences: profile.group_preferences || { groupSize: 5, sessionDuration: 2, studyGoals: [] }
-      };
-      
-      navigation.navigate('ProfileEdit', { profile: studentProfile });
-    }
+  const handleMessageUser = () => {
+    Alert.alert('Coming Soon', 'Direct messaging feature will be available soon!');
   };
 
   if (loading) {
@@ -114,13 +85,20 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     );
   }
 
-  if (error || !profile) {
+  if (error || !user) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backButton}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Profile</Text>
+          <View style={{ width: 60 }} />
+        </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error || 'Profile not found'}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadProfile}>
+          <Text style={styles.errorText}>{error || 'User not found'}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadUserProfile}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -129,21 +107,13 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   // Parse data safely
-  const subjects = Array.isArray(profile.subjects) 
-    ? profile.subjects 
-    : (profile.subjects ? JSON.parse(profile.subjects) : []);
+  const subjects = Array.isArray(user.subjects) 
+    ? user.subjects 
+    : (user.subjects ? JSON.parse(user.subjects) : []);
   
-  const schedule = typeof profile.schedule === 'object' 
-    ? profile.schedule 
-    : (profile.schedule ? JSON.parse(profile.schedule) : {});
-  
-  const preferences = typeof profile.group_preferences === 'object'
-    ? profile.group_preferences
-    : (profile.group_preferences ? JSON.parse(profile.group_preferences) : {});
-
-  const studyPreferences = typeof profile.studyPreferences === 'object'
-    ? profile.studyPreferences
-    : (profile.studyPreferences ? JSON.parse(profile.studyPreferences) : {});
+  const schedule = typeof user.schedule === 'object' 
+    ? user.schedule 
+    : (user.schedule ? JSON.parse(user.schedule) : {});
 
   return (
     <SafeAreaView style={styles.container}>
@@ -151,10 +121,11 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Profile</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -163,41 +134,40 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
-                {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
+                {user.name ? user.name.charAt(0).toUpperCase() : '?'}
               </Text>
             </View>
           </View>
 
-          <Text style={styles.name}>{profile.name || 'Unknown'}</Text>
-          <Text style={styles.email}>{profile.email || ''}</Text>
+          <Text style={styles.name}>{user.name || 'Unknown'}</Text>
+          <Text style={styles.email}>{user.email || ''}</Text>
           
-          {profile.major && (
+          {user.major && (
             <View style={styles.majorBadge}>
-              <Text style={styles.majorText}>{profile.major}</Text>
+              <Text style={styles.majorText}>{user.major}</Text>
             </View>
           )}
 
-          <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-            <Text style={styles.editButtonText}>Edit Profile</Text>
-          </TouchableOpacity>
-        </View>
+          {user.year && (
+            <Text style={styles.yearText}>{user.year}</Text>
+          )}
 
-        {/* Academic Info */}
-        {profile.major && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Academic Info</Text>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Major:</Text>
-              <Text style={styles.infoValue}>{profile.major}</Text>
-            </View>
-            {profile.year && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Year:</Text>
-                <Text style={styles.infoValue}>{profile.year}</Text>
-              </View>
-            )}
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={handleSendFriendRequest}
+            >
+              <Text style={styles.actionButtonText}>👋 Add Friend</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.actionButtonSecondary]} 
+              onPress={handleMessageUser}
+            >
+              <Text style={styles.actionButtonTextSecondary}>💬 Message</Text>
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
 
         {/* Subjects */}
         {subjects.length > 0 && (
@@ -213,7 +183,15 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         )}
 
-        {/* Schedule */}
+        {/* Learning Style */}
+        {user.learning_style && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Learning Style</Text>
+            <Text style={styles.infoText}>{user.learning_style}</Text>
+          </View>
+        )}
+
+        {/* Availability */}
         {Object.keys(schedule).length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Availability</Text>
@@ -231,34 +209,6 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         )}
 
-        {/* Study Preferences */}
-        {(Object.keys(preferences).length > 0 || Object.keys(studyPreferences).length > 0) && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Study Preferences</Text>
-            
-            {preferences.groupSize && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Preferred Group Size:</Text>
-                <Text style={styles.infoValue}>{preferences.groupSize}</Text>
-              </View>
-            )}
-            
-            {studyPreferences.learningStyle && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Learning Style:</Text>
-                <Text style={styles.infoValue}>{studyPreferences.learningStyle}</Text>
-              </View>
-            )}
-            
-            {studyPreferences.sessionDuration && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Session Duration:</Text>
-                <Text style={styles.infoValue}>{studyPreferences.sessionDuration}</Text>
-              </View>
-            )}
-          </View>
-        )}
-
         <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>
@@ -270,6 +220,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   } as ViewStyle,
+  
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: theme.colors.primary,
+  } as ViewStyle,
+  
+  backButton: {
+    fontSize: 16,
+    color: theme.colors.white,
+    fontWeight: '600',
+  } as TextStyle,
+  
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.colors.white,
+  } as TextStyle,
   
   loadingContainer: {
     flex: 1,
@@ -307,36 +278,6 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: theme.colors.white,
     fontSize: 16,
-    fontWeight: '600',
-  } as TextStyle,
-  
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: theme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  } as ViewStyle,
-  
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  } as TextStyle,
-  
-  logoutButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: theme.colors.error,
-    borderRadius: 8,
-  } as ViewStyle,
-  
-  logoutButtonText: {
-    color: theme.colors.white,
-    fontSize: 14,
     fontWeight: '600',
   } as TextStyle,
   
@@ -390,7 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 8,
   } as ViewStyle,
   
   majorText: {
@@ -399,17 +340,44 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
   } as TextStyle,
   
-  editButton: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
+  yearText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginBottom: 16,
+  } as TextStyle,
+  
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
   } as ViewStyle,
   
-  editButtonText: {
+  actionButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flex: 1,
+  } as ViewStyle,
+  
+  actionButtonSecondary: {
+    backgroundColor: theme.colors.white,
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+  } as ViewStyle,
+  
+  actionButtonText: {
     color: theme.colors.white,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
+  } as TextStyle,
+  
+  actionButtonTextSecondary: {
+    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   } as TextStyle,
   
   section: {
@@ -428,23 +396,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   } as TextStyle,
   
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  } as ViewStyle,
-  
-  infoLabel: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-  } as TextStyle,
-  
-  infoValue: {
+  infoText: {
     fontSize: 14,
     color: theme.colors.text,
-    fontWeight: '500',
   } as TextStyle,
   
   tagContainer: {

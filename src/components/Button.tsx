@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { theme } from '../styles/theme';
 
-type ButtonVariant = 'primary' | 'secondary' | 'success' | 'info' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'success' | 'info' | 'danger';
 type ButtonSize = 'medium' | 'small';
 
 interface ButtonProps {
@@ -54,6 +54,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: theme.colors.primary,
   } as ViewStyle,
+  outline: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+  } as ViewStyle,
   success: {
     backgroundColor: theme.colors.success,
     ...theme.shadows.light,
@@ -85,6 +90,9 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
   } as TextStyle,
   secondaryText: {
+    color: theme.colors.primary,
+  } as TextStyle,
+  outlineText: {
     color: theme.colors.primary,
   } as TextStyle,
   successText: {

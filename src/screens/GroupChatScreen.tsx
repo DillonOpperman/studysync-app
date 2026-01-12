@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -16,6 +15,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../styles/theme';
 import { ChatStorageService } from '../services/ChatStorageService';
 import { StorageService } from '../services/StorageService';
@@ -114,6 +114,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
   const [isTyping, setIsTyping] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [previewImageUri, setPreviewImageUri] = useState('');
+  const [showMediaOptions, setShowMediaOptions] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -286,12 +287,63 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
         keyboardVerticalOffset={90}
       >
         <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.attachButton} onPress={handleImagePick}>
-            <Text style={styles.attachButtonText}>📎</Text>
+          {/* Media Options Modal */}
+          {showMediaOptions && (
+            <View style={styles.mediaOptionsContainer}>
+              <TouchableOpacity 
+                style={styles.mediaOption}
+                onPress={() => {
+                  Alert.alert('Camera', 'Camera feature coming soon!');
+                  setShowMediaOptions(false);
+                }}
+              >
+                <Text style={styles.mediaIcon}>📷</Text>
+                <Text style={styles.mediaLabel}>Camera</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.mediaOption}
+                onPress={() => {
+                  Alert.alert('Photo Library', 'Photo library feature coming soon!');
+                  setShowMediaOptions(false);
+                }}
+              >
+                <Text style={styles.mediaIcon}>🖼️</Text>
+                <Text style={styles.mediaLabel}>Photos</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.mediaOption}
+                onPress={() => {
+                  Alert.alert('Documents', 'Document upload feature coming soon!');
+                  setShowMediaOptions(false);
+                }}
+              >
+                <Text style={styles.mediaIcon}>📎</Text>
+                <Text style={styles.mediaLabel}>Files</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.mediaOption}
+                onPress={() => setShowMediaOptions(false)}
+              >
+                <Text style={styles.mediaIcon}>❌</Text>
+                <Text style={styles.mediaLabel}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Attachment Button */}
+          <TouchableOpacity 
+            style={styles.attachButton}
+            onPress={() => setShowMediaOptions(!showMediaOptions)}
+          >
+            <Text style={styles.attachIcon}>📎</Text>
           </TouchableOpacity>
 
+          {/* Message Input */}
           <TextInput
-            style={styles.input}
+            style={styles.messageInput}
             placeholder="Type a message..."
             placeholderTextColor={theme.colors.textSecondary}
             value={inputText}
@@ -300,12 +352,13 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
             maxLength={500}
           />
 
+          {/* Send Button */}
           <TouchableOpacity 
             style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]} 
             onPress={sendMessage}
             disabled={!inputText.trim()}
           >
-            <Text style={styles.sendButtonText}>➤</Text>
+            <Text style={styles.sendIcon}>✈️</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -361,12 +414,99 @@ const styles = StyleSheet.create({
   reactionBadge: { flexDirection: 'row', backgroundColor: theme.colors.accent, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.xs, paddingVertical: 2, alignItems: 'center' } as ViewStyle,
   reactionEmoji: { fontSize: 12 } as TextStyle,
   reactionCount: { fontSize: 10, marginLeft: 2, color: theme.colors.text, fontWeight: 'bold' } as TextStyle,
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.white, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderTopWidth: 1, borderTopColor: theme.colors.border } as ViewStyle,
-  attachButton: { padding: theme.spacing.sm, marginRight: theme.spacing.xs } as ViewStyle,
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: theme.colors.white,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    position: 'relative',
+  } as ViewStyle,
+  
+  mediaOptionsContainer: {
+    position: 'absolute',
+    bottom: 60,
+    left: 12,
+    right: 12,
+    backgroundColor: theme.colors.white,
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    ...theme.shadows.large,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+  } as ViewStyle,
+  
+  mediaOption: {
+    alignItems: 'center',
+    padding: 8,
+  } as ViewStyle,
+  
+  mediaIcon: {
+    fontSize: 32,
+    marginBottom: 4,
+  } as TextStyle,
+  
+  mediaLabel: {
+    fontSize: 11,
+    color: theme.colors.text,
+    fontWeight: '500',
+  } as TextStyle,
+  
+  attachButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+  } as ViewStyle,
+  
+  attachIcon: {
+    fontSize: 20,
+  } as TextStyle,
+  
+  messageInput: {
+    flex: 1,
+    maxHeight: 100,
+    minHeight: 40,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    fontSize: 15,
+    color: theme.colors.text,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+  } as ViewStyle,
+  
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  } as ViewStyle,
+  
+  sendButtonDisabled: {
+    backgroundColor: theme.colors.border,
+    opacity: 0.5,
+  } as ViewStyle,
+  
+  sendIcon: {
+    fontSize: 18,
+  } as TextStyle,
+  
   attachButtonText: { fontSize: 20 } as TextStyle,
   input: { flex: 1, backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, fontSize: 14, maxHeight: 100 } as ViewStyle,
-  sendButton: { marginLeft: theme.spacing.sm, backgroundColor: theme.colors.primary, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
-  sendButtonDisabled: { opacity: 0.5 } as ViewStyle,
   sendButtonText: { fontSize: 20, color: theme.colors.white } as TextStyle,
   reactionModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' } as ViewStyle,
   reactionPicker: { flexDirection: 'row', backgroundColor: theme.colors.white, borderRadius: theme.borderRadius.xl, padding: theme.spacing.md, gap: theme.spacing.sm } as ViewStyle,

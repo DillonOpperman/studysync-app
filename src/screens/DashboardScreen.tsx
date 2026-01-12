@@ -3,14 +3,15 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   TouchableOpacity,
   ViewStyle,
   TextStyle,
   RefreshControl,
+  Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { theme } from '../styles/theme';
 import { StorageService } from '../services/StorageService';
@@ -147,15 +148,23 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
     ];
   };
 
-  const handleMatchAction = (match: MatchRecommendation) => {
+  const handleMatchAction = async (match: MatchRecommendation) => {
     if (match.suggested) {
       // Navigate to MyGroups and open create modal
       navigation.navigate('MyGroups', { openCreateModal: true });
     } else {
-      // Join group action
-      alert(
-        `Request to Join\n\n${match.title}\n\n${match.explanation}\n\nRequest sent! You will be notified when the group leader responds.`
-      );
+      // Send join request
+      try {
+        const response = await RealAIService.requestJoinGroup(match.id.toString());
+        if (response.success) {
+          Alert.alert('Request Sent!', response.message || 'Your join request has been sent to the group leader.');
+        } else {
+          Alert.alert('Error', response.error || 'Failed to send join request');
+        }
+      } catch (error) {
+        console.error('Join request error:', error);
+        Alert.alert('Error', 'Unable to send join request. Please try again.');
+      }
     }
   };
 

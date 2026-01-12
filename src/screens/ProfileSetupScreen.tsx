@@ -3,12 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   ViewStyle,
   TextStyle,
+  Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { theme } from '../styles/theme';
 import { RootStackNavigationProp } from '../navigation/AppNavigator';
@@ -81,17 +82,17 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
         // Check all basic fields are filled
         if (!profileData.name?.trim()) return false;
         if (!profileData.email?.trim()) return false;
+        if (!profileData.password?.trim()) return false;
         if (!profileData.university?.trim()) return false;
         if (!profileData.major) return false;
         if (!profileData.year) return false;
-        
         // Validate email format
         if (!validateEmailFormat(profileData.email)) return false;
         if (!isEduEmail(profileData.email)) return false;
-        
         // Validate name length
         if (profileData.name.trim().length < 2) return false;
-        
+        // Validate password length
+        if (profileData.password.trim().length < 6) return false;
         return true;
         
       case 2:
@@ -126,6 +127,12 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
         }
         if (!isEduEmail(profileData.email)) {
           return 'Please use your .edu email address to verify you\'re a student';
+        }
+        if (!profileData.password?.trim()) {
+          return 'Please create a password';
+        }
+        if (profileData.password.trim().length < 6) {
+          return 'Password must be at least 6 characters';
         }
         if (!profileData.university?.trim()) {
           return 'Please enter your university';
@@ -175,49 +182,48 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
   const handleCompleteSetup = async () => {
     try {
       setLoading(true);
-      
+
+      // Clear any existing token first to ensure fresh authentication
+      await RealAIService.clearToken();
+
       // Generate unique user ID
       const userId = await StorageService.generateUserId();
-      
-      // Create complete profile
-      const completeProfile: StudentProfile = {
+
+      // Build complete profile
+      const profile: StudentProfile = {
         ...profileData as StudentProfile,
         id: userId,
+        password: profileData.password,
       };
-      
-      // Save profile locally
-      await StorageService.saveProfile(completeProfile);
-      
-      // Send to backend and get initial recommendations
-      const result = await RealAIService.createProfile(completeProfile);
-      
-      if (!result.success) {
-        // Show validation errors from backend
-        if (result.errors && result.errors.length > 0) {
-          const errorMessage = `${result.message}\n\n• ${result.errors.join('\n• ')}`;
-          alert(errorMessage);
-        } else {
-          alert(result.message || 'Failed to create profile. Please try again.');
-        }
-        return;
+
+      if (!profile) return;
+
+      // Try to register with backend
+      let response = await RealAIService.register(profile);
+
+      // If user already exists (409), try logging in instead
+      if (!response.success && response.status === 409) {
+        console.log('User already exists, attempting login...');
+        response = await RealAIService.login(profile.email, profile.password || '');
       }
-      
-      const recommendations = await RealAIService.getRecommendations(completeProfile);
-      
-      // Save initial matches
-      await StorageService.saveMatches(recommendations);
-      
-      // Show success message with match count
-      const matchCount = recommendations.filter(r => !r.suggested).length;
-      const successMessage = matchCount > 0
-        ? `Welcome to StudySync!\n\n${result.message}\n\nFound ${matchCount} compatible study groups based on your profile!`
-        : `Welcome to StudySync!\n\n${result.message}\n\nNo existing groups match your profile yet, but you can create your own!`;
-      
-      alert(successMessage);
-      navigation.navigate('Main');
-    } catch (error) {
-      console.error('Error completing setup:', error);
-      alert('An unexpected error occurred. Please try again.');
+
+      if (response.success) {
+        // Save profile locally
+        await StorageService.saveProfile(profile);
+
+        // Navigate to Main tabs (not Dashboard)
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else {
+        const errorMsg = response.error || 'Failed to create profile. Please try again.';
+        Alert.alert('Error', errorMsg);
+      }
+    } catch (error: any) {
+      console.error('Error creating profile:', error);
+      const errorMsg = error.message || 'Unable to connect to server. Please try again.';
+      Alert.alert('Error', errorMsg);
     } finally {
       setLoading(false);
     }

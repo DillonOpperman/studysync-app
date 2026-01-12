@@ -4,7 +4,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Modal,
@@ -12,6 +11,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../styles/theme';
 import { JoinedGroup } from '../types/Matching';
 import { ChatStorageService } from '../services/ChatStorageService';
@@ -189,6 +189,29 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
 
         {/* Actions */}
         <View style={styles.actionsSection}>
+          <TouchableOpacity 
+            style={styles.messageLeaderButton}
+            onPress={() => {
+              Alert.alert(
+                'Message Leader',
+                `Send a message to ${group.group.leader}?`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Send Message',
+                    onPress: () => {
+                      // Navigate to a message/chat screen with the leader
+                      // For now, just show "Feature coming soon"
+                      Alert.alert('Coming Soon', 'Direct messaging feature will be available soon!');
+                    }
+                  }
+                ]
+              );
+            }}
+          >
+            <Text style={styles.messageLeaderText}>📧 Message Group Leader</Text>
+          </TouchableOpacity>
+
           <Button 
             title="Leave Group" 
             variant="danger"
@@ -306,6 +329,19 @@ const styles = StyleSheet.create({
   sessionLocation: { fontSize: 13, color: theme.colors.text, marginBottom: theme.spacing.xs } as TextStyle,
   sessionAttendees: { fontSize: 12, color: theme.colors.textSecondary } as TextStyle,
   actionsSection: { padding: theme.spacing.lg, marginBottom: theme.spacing.xl } as ViewStyle,
+  messageLeaderButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    alignItems: 'center',
+    ...theme.shadows.light
+  } as ViewStyle,
+  messageLeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.white
+  } as TextStyle,
   modalContainer: { flex: 1, backgroundColor: theme.colors.background } as ViewStyle,
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: theme.colors.border, backgroundColor: theme.colors.white } as ViewStyle,
   cancelText: { fontSize: 16, color: theme.colors.danger } as TextStyle,

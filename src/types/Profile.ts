@@ -6,6 +6,7 @@ export interface StudentProfile {
   university: string;
   major: string;
   year: string;
+  password?: string;
   
   // New AI matching fields
   learningStyle: string;

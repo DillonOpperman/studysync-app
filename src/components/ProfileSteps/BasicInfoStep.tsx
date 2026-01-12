@@ -132,6 +132,15 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, onUpdate }) 
       />
       
       <Input
+        label="Password"
+        placeholder="Create a password"
+        value={data.password || ''}
+        onChangeText={(value) => onUpdate('password', value)}
+        secureTextEntry
+        autoCapitalize="none"
+      />
+      
+      <Input
         label="University *"
         placeholder="Enter your university name"
         value={data.university || ''}
