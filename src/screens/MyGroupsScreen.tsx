@@ -15,10 +15,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../styles/theme';
-import { StorageService } from '../services/StorageService';
+import { RealAIService } from '../services/RealAIService';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-import { StudyGroup, JoinedGroup } from '../types/Matching';
 
 interface MyGroupsScreenProps {
   navigation: any;
@@ -26,12 +25,12 @@ interface MyGroupsScreenProps {
 }
 
 const GroupCard: React.FC<{
-  group: JoinedGroup;
+  group: any;
   onPress: () => void;
 }> = ({ group, onPress }) => (
   <TouchableOpacity style={styles.groupCard} onPress={onPress}>
     <View style={styles.groupHeader}>
-      <Text style={styles.groupTitle}>{group.group.title}</Text>
+      <Text style={styles.groupTitle}>{group.title}</Text>
       <View style={[
         styles.statusBadge,
         group.status === 'active' && styles.statusActive,
@@ -43,33 +42,36 @@ const GroupCard: React.FC<{
       </View>
     </View>
 
-    <Text style={styles.groupSubject}>{group.group.subject}</Text>
+    <Text style={styles.groupSubject}>{group.subject}</Text>
     
     <View style={styles.groupInfo}>
       <Text style={styles.groupInfoText}>
-        👥 {group.group.currentMembers}/{group.group.maxMembers} members
+        Members: {group.currentMembers}/{group.maxMembers}
       </Text>
       <Text style={styles.groupInfoText}>
-        📅 {group.group.schedule}
+        Schedule: {group.schedule || 'Flexible'}
       </Text>
       <Text style={styles.groupInfoText}>
-        📍 {group.group.location}
+        Location: {group.location || 'TBD'}
+      </Text>
+      <Text style={styles.groupInfoText}>
+        Led by {group.leaderName}
       </Text>
     </View>
 
-    {group.group.meetingTimes.length > 0 && (
-      <View style={styles.nextMeetingContainer}>
-        <Text style={styles.nextMeetingLabel}>Next meeting:</Text>
-        <Text style={styles.nextMeetingText}>{group.group.meetingTimes[0]}</Text>
+    {group.role === 'leader' && (
+      <View style={styles.leaderBadge}>
+        <Text style={styles.leaderBadgeText}>You're the leader</Text>
       </View>
     )}
   </TouchableOpacity>
 );
 
 export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, route }) => {
-  const [groups, setGroups] = useState<JoinedGroup[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   // Create group form state
   const [groupTitle, setGroupTitle] = useState('');
@@ -78,6 +80,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
   const [groupSchedule, setGroupSchedule] = useState('');
   const [groupLocation, setGroupLocation] = useState('');
   const [maxMembers, setMaxMembers] = useState('6');
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadGroups();
@@ -90,11 +93,16 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
 
   const loadGroups = async () => {
     try {
-      // Load from storage using new helper
-      const myGroups = await StorageService.getGroups();
+      setLoading(true);
+      // ✅ CORRECT: Load from backend API
+      const myGroups = await RealAIService.getUserGroups();
+      console.log('Loaded groups from backend:', myGroups);
       setGroups(myGroups || []);
     } catch (error) {
       console.error('Error loading groups:', error);
+      Alert.alert('Error', 'Failed to load groups');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,64 +119,72 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
     }
 
     try {
-      const profile = await StorageService.getProfile();
+      setCreating(true);
       
-      const newGroup: StudyGroup = {
-        id: `group_${Date.now()}`,
+      // ✅ CORRECT: Create group via backend API
+      const response = await RealAIService.createGroup({
         title: groupTitle,
         subject: groupSubject,
         description: groupDescription,
         schedule: groupSchedule || 'Flexible',
         location: groupLocation || 'TBD',
-  maxMembers: parseInt(maxMembers, 10) || 6,
-        currentMembers: 1,
-        members: [
-          {
-            id: profile?.id || 'user_1',
-            name: profile?.name || 'You',
-            major: profile?.major || 'Unknown',
-            role: 'leader',
-          },
-        ],
-        leader: profile?.name || 'You',
-        createdAt: new Date().toISOString(),
-        meetingTimes: [],
-      };
+        maxMembers: parseInt(maxMembers, 10) || 6,
+      });
 
-      const joinedGroup: JoinedGroup = {
-        group: newGroup,
-        joinedAt: new Date().toISOString(),
-        status: 'active',
-      };
+      if (response.success) {
+        // Reset form
+        setGroupTitle('');
+        setGroupSubject('');
+        setGroupDescription('');
+        setGroupSchedule('');
+        setGroupLocation('');
+        setMaxMembers('6');
+        setShowCreateModal(false);
 
-  // Save to storage using new helper
-  const updatedGroups = [...groups, joinedGroup];
-  await StorageService.saveGroups(updatedGroups);
-  setGroups(updatedGroups);
+        // Reload groups from backend
+        await loadGroups();
 
-      // Reset form
-      setGroupTitle('');
-      setGroupSubject('');
-      setGroupDescription('');
-      setGroupSchedule('');
-      setGroupLocation('');
-      setMaxMembers('6');
-      setShowCreateModal(false);
-
-  Alert.alert('Group created', `Group "${groupTitle}" created successfully!\n\nYou are now the group leader. Other students can find and join your group through search.`);
+        Alert.alert(
+          'Group created!', 
+          `Group "${groupTitle}" created successfully!\n\nYou are now the group leader. Other students can find and join your group through search.`
+        );
+      } else {
+        Alert.alert('Error', response.error || 'Failed to create group');
+      }
     } catch (error) {
       console.error('Error creating group:', error);
-  Alert.alert('Create failed', 'Failed to create group. Please try again.');
+      Alert.alert('Create failed', 'Failed to create group. Please try again.');
+    } finally {
+      setCreating(false);
     }
   };
 
-  const handleGroupPress = (group: JoinedGroup) => {
+  const handleGroupPress = (group: any) => {
     if (group.status === 'active') {
       // Navigate to group chat
-      navigation.navigate('GroupChat', { group });
+      navigation.navigate('GroupChat', { 
+        group: {
+          group: {
+            id: group.id,
+            title: group.title,
+            subject: group.subject,
+            description: group.description,
+            schedule: group.schedule,
+            location: group.location,
+            maxMembers: group.maxMembers,
+            currentMembers: group.currentMembers,
+            members: [],
+            leader: group.leaderName,
+            createdAt: group.createdAt,
+            meetingTimes: []
+          },
+          joinedAt: group.joinedAt,
+          status: group.status
+        }
+      });
     } else {
       Alert.alert(
-        group.group.title,
+        group.title,
         `Status: Pending approval\n\nYour request to join this group is waiting for approval from the group leader.`
       );
     }
@@ -198,7 +214,11 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
         }
       >
         <View style={styles.content}>
-          {groups.length > 0 ? (
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading your groups...</Text>
+            </View>
+          ) : groups.length > 0 ? (
             <>
               <Text style={styles.sectionTitle}>
                 Active Groups ({groups.filter(g => g.status === 'active').length})
@@ -207,7 +227,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
                 .filter(g => g.status === 'active')
                 .map((group, index) => (
                   <GroupCard
-                    key={index}
+                    key={group.id || index}
                     group={group}
                     onPress={() => handleGroupPress(group)}
                   />
@@ -222,7 +242,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
                     .filter(g => g.status === 'pending')
                     .map((group, index) => (
                       <GroupCard
-                        key={index}
+                        key={group.id || index}
                         group={group}
                         onPress={() => handleGroupPress(group)}
                       />
@@ -275,6 +295,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
               placeholder="e.g., Math 220 Study Group"
               value={groupTitle}
               onChangeText={setGroupTitle}
+              editable={!creating}
             />
 
             <Input
@@ -282,6 +303,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
               placeholder="e.g., Calculus, Computer Science"
               value={groupSubject}
               onChangeText={setGroupSubject}
+              editable={!creating}
             />
 
             <Input
@@ -290,6 +312,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
               value={groupDescription}
               onChangeText={setGroupDescription}
               multiline
+              editable={!creating}
             />
 
             <Input
@@ -297,6 +320,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
               placeholder="e.g., Mon/Wed 6-8 PM"
               value={groupSchedule}
               onChangeText={setGroupSchedule}
+              editable={!creating}
             />
 
             <Input
@@ -304,6 +328,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
               placeholder="e.g., Library Study Room B"
               value={groupLocation}
               onChangeText={setGroupLocation}
+              editable={!creating}
             />
 
             <Input
@@ -312,13 +337,15 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
               value={maxMembers}
               onChangeText={setMaxMembers}
               keyboardType="number-pad"
+              editable={!creating}
             />
 
             <View style={styles.modalButtons}>
               <Button
-                title="Create Group"
+                title={creating ? "Creating..." : "Create Group"}
                 onPress={handleCreateGroup}
                 style={styles.createFullButton}
+                disabled={creating}
               />
             </View>
 
@@ -373,6 +400,14 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing.lg,
   } as ViewStyle,
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  } as ViewStyle,
+  loadingText: {
+    fontSize: 16,
+    color: theme.colors.textSecondary,
+  } as TextStyle,
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -431,20 +466,18 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     lineHeight: 18,
   } as TextStyle,
-  nextMeetingContainer: {
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.borderRadius.sm,
-    padding: theme.spacing.sm,
-    marginTop: theme.spacing.xs,
+  leaderBadge: {
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginTop: 8,
+    alignSelf: 'flex-start',
   } as ViewStyle,
-  nextMeetingLabel: {
+  leaderBadgeText: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: theme.colors.primary,
-  } as TextStyle,
-  nextMeetingText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
+    color: '#000',
   } as TextStyle,
   emptyContainer: {
     alignItems: 'center',

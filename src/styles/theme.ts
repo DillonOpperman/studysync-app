@@ -11,6 +11,7 @@ interface Colors {
   success: string;
   info: string;
   danger: string;
+  error: string;
   white: string;
 }
 
@@ -74,6 +75,7 @@ export const theme: Theme = {
     success: '#228b22',
     info: '#4682b4',
     danger: '#b22222',
+    error: '#d32f2f',
     white: '#ffffff',
   },
   fonts: {

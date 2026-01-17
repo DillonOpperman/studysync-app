@@ -53,7 +53,7 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
     }
   };
 
-  const handleSendFriendRequest = () => {
+  const handleSendFriendRequest = async () => {
     Alert.alert(
       'Send Friend Request',
       `Send a friend request to ${user.name}?`,
@@ -61,8 +61,18 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Send',
-          onPress: () => {
-            Alert.alert('Coming Soon', 'Friend request feature will be available soon!');
+          onPress: async () => {
+            try {
+              const response = await RealAIService.sendFriendRequest(userId);
+              if (response.success) {
+                Alert.alert('Success!', response.message);
+              } else {
+                Alert.alert('Error', response.error || 'Failed to send friend request');
+              }
+            } catch (error) {
+              console.error('Friend request error:', error);
+              Alert.alert('Error', 'Failed to send friend request');
+            }
           }
         }
       ]
@@ -70,7 +80,11 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
   };
 
   const handleMessageUser = () => {
-    Alert.alert('Coming Soon', 'Direct messaging feature will be available soon!');
+    // Navigate to direct message screen
+    navigation.navigate('DirectMessage', { 
+      userId: user.id,
+      userName: user.name 
+    });
   };
 
   if (loading) {
@@ -158,13 +172,13 @@ export const UserProfileScreen: React.FC<UserProfileScreenProps> = ({ navigation
               style={styles.actionButton} 
               onPress={handleSendFriendRequest}
             >
-              <Text style={styles.actionButtonText}>👋 Add Friend</Text>
+              <Text style={styles.actionButtonText}>Add Friend</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.actionButton, styles.actionButtonSecondary]} 
               onPress={handleMessageUser}
             >
-              <Text style={styles.actionButtonTextSecondary}>💬 Message</Text>
+              <Text style={styles.actionButtonTextSecondary}>Message</Text>
             </TouchableOpacity>
           </View>
         </View>

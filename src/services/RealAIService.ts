@@ -483,4 +483,280 @@ export class RealAIService {
       return { success: false, error: 'Failed to load profile' };
     }
   }
+
+  // Send friend request
+  static async sendFriendRequest(userId: string): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${this.baseURL}/api/friends/request`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { success: false, error: errorData.error };
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      throw error;
+    }
+  }
+
+  // Get friend requests
+  static async getFriendRequests(): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return { requests: [] };
+      }
+
+      const response = await fetch(`${this.baseURL}/api/friends/requests`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return { requests: [] };
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting friend requests:', error);
+      return { requests: [] };
+    }
+  }
+
+  // Accept friend request
+  static async acceptFriendRequest(requestId: number): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${this.baseURL}/api/friends/request/${requestId}/accept`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      throw error;
+    }
+  }
+
+  // Reject friend request
+  static async rejectFriendRequest(requestId: number): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${this.baseURL}/api/friends/request/${requestId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { success: false, error: errorData.error };
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      throw error;
+    }
+  }
+
+  // Get friends list
+  static async getFriends(): Promise<any[]> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return [];
+      }
+
+      const response = await fetch(`${this.baseURL}/api/friends`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const result = await response.json();
+      return result.friends || [];
+    } catch (error) {
+      console.error('Error getting friends:', error);
+      return [];
+    }
+  }
+
+  // Send direct message
+  static async sendDirectMessage(receiverId: string, content: string): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${this.baseURL}/api/messages/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ receiverId, content }),
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending direct message:', error);
+      throw error;
+    }
+  }
+
+  // Get direct messages with a user
+  static async getDirectMessages(userId: string): Promise<any[]> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        return [];
+      }
+
+      const response = await fetch(`${this.baseURL}/api/messages/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        return [];
+      }
+
+      const result = await response.json();
+      return result.messages || [];
+    } catch (error) {
+      console.error('Error getting direct messages:', error);
+      return [];
+    }
+  }
+
+  // Mark notification as read
+  static async markNotificationRead(notificationId: number): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${this.baseURL}/api/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  // Approve join request
+  static async approveJoinRequest(groupId: string, requesterId: string): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(
+        `${this.baseURL}/api/groups/${groupId}/requests/${requesterId}/approve`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error approving join request:', error);
+      throw error;
+    }
+  }
+
+  // Reject friend request
+  static async rejectFriendRequest(requestId: number): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${this.baseURL}/api/friends/request/${requestId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      throw error;
+    }
+  }
+
+  // Reject join request
+  static async rejectJoinRequest(groupId: string, requesterId: string): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(
+        `${this.baseURL}/api/groups/${groupId}/requests/${requesterId}/reject`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error rejecting join request:', error);
+      throw error;
+    }
+  }
 }

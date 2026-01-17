@@ -150,7 +150,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
           autoCorrect={false}
         />
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>🔍</Text>
+          <Text style={styles.searchButtonText}>Search</Text>
         </TouchableOpacity>
       </View>
 
@@ -195,9 +195,9 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
                       )}
                     </View>
                     <Text style={styles.resultSubject}>{result.focus}</Text>
-                    <Text style={styles.resultInfo}>👥 {result.memberInfo}</Text>
-                    <Text style={styles.resultInfo}>📅 {result.schedule}</Text>
-                    <Text style={styles.resultInfo}>📍 {result.location}</Text>
+                    <Text style={styles.resultInfo}>Members: {result.memberInfo}</Text>
+                    <Text style={styles.resultInfo}>Schedule: {result.schedule}</Text>
+                    <Text style={styles.resultInfo}>Location: {result.location}</Text>
                     <Text style={styles.resultDescription} numberOfLines={2}>
                       {result.explanation}
                     </Text>
@@ -246,7 +246,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
         ) : (
           <View style={styles.centerContainer}>
             <Text style={styles.instructionsTitle}>
-              {searchMode === 'groups' ? '🔍 Find Study Groups' : '👥 Find Study Partners'}
+              {searchMode === 'groups' ? 'Find Study Groups' : 'Find Study Partners'}
             </Text>
             <Text style={styles.instructionsText}>
               {searchMode === 'groups'

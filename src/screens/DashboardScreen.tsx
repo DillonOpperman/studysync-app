@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
+import { NotificationBell } from '../components/NotificationBell';
 import { theme } from '../styles/theme';
 import { StorageService } from '../services/StorageService';
 import { RealAIService } from '../services/RealAIService';
@@ -177,9 +178,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
           <Text style={styles.headerTitle}>Your Matches</Text>
           <Text style={styles.headerSubtitle}>Hi {userName}!</Text>
         </View>
-        <View style={styles.notificationBadge}>
-          <Text style={styles.notificationText}>{matches.length}</Text>
-        </View>
+        <NotificationBell navigation={navigation} />
       </View>
       
       <ScrollView 

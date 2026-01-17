@@ -18,6 +18,9 @@ import { MyGroupsScreen } from '../screens/MyGroupsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ProfileEditScreen } from '../screens/ProfileEditScreen';
 import { UserProfileScreen } from '../screens/UserProfileScreen';
+import { DirectMessageScreen } from '../screens/DirectMessageScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { FriendsListScreen } from '../screens/FriendsListScreen';
 import { JoinedGroup } from '../types/Matching';
 
 // Stack Navigator Types
@@ -29,6 +32,10 @@ export type RootStackParamList = {
   GroupChat: { group: JoinedGroup };
   GroupInfo: { group: JoinedGroup };
   UserProfile: { userId: string };
+  DirectMessage: { userId: string; userName: string };
+  ProfileEdit: { profile: any };
+  Notifications: undefined;
+  FriendsList: undefined;
 };
 
 // Tab Navigator Types
@@ -83,7 +90,6 @@ const MainTabs: React.FC = () => (
       component={DashboardScreen}
       options={{
         tabBarLabel: 'Home',
-        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🏠</Text>,
       }}
     />
     <Tab.Screen
@@ -91,7 +97,6 @@ const MainTabs: React.FC = () => (
       component={SearchScreen}
       options={{
         tabBarLabel: 'Search',
-        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>🔍</Text>,
       }}
     />
     <Tab.Screen
@@ -99,7 +104,6 @@ const MainTabs: React.FC = () => (
       component={MyGroupsScreen}
       options={{
         tabBarLabel: 'My Groups',
-        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👥</Text>,
       }}
     />
     <Tab.Screen
@@ -107,7 +111,6 @@ const MainTabs: React.FC = () => (
       component={ProfileScreen}
       options={{
         tabBarLabel: 'Profile',
-        tabBarIcon: () => <Text style={{ color: 'white', fontSize: 18 }}>👤</Text>,
       }}
     />
   </Tab.Navigator>
@@ -129,6 +132,21 @@ export const AppNavigator: React.FC = () => (
       <Stack.Screen 
         name="UserProfile" 
         component={UserProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="DirectMessage" 
+        component={DirectMessageScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="Notifications" 
+        component={NotificationsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="FriendsList" 
+        component={FriendsListScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

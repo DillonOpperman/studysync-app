@@ -302,14 +302,14 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({ navigati
           {currentStep === 2 && (
             <View style={styles.helpContainer}>
               <Text style={styles.helpText}>
-                💡 Tip: The more detailed your learning style description, the better matches we can find!
+                Tip: The more detailed your learning style description, the better matches we can find!
               </Text>
             </View>
           )}
           
           {currentStep === 4 && (
             <View style={styles.finalStepContainer}>
-              <Text style={styles.finalStepTitle}>🎯 Almost Ready!</Text>
+              <Text style={styles.finalStepTitle}>Almost Ready!</Text>
               <Text style={styles.finalStepText}>
                 Once you complete setup, our AI will analyze your profile and find compatible study partners based on:
               </Text>

@@ -19,6 +19,7 @@ import { StudySession } from '../types/Chat';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { StorageService } from '../services/StorageService';
+import { RealAIService } from '../services/RealAIService';
 
 interface GroupInfoScreenProps {
   navigation: any;
@@ -37,11 +38,28 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
   const [sessionTime, setSessionTime] = useState('');
   const [sessionLocation, setSessionLocation] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
+  const [isMember, setIsMember] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadSessions();
     loadUserId();
+    checkMembership();
   }, []);
+
+  const checkMembership = async () => {
+    try {
+      setIsLoading(true);
+      const userGroups = await RealAIService.getUserGroups();
+      const memberOfGroup = userGroups.some((g: any) => g.id === group.group.id);
+      setIsMember(memberOfGroup);
+    } catch (error) {
+      console.error('Error checking membership:', error);
+      setIsMember(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadSessions = async () => {
     const groupSessions = await ChatStorageService.getGroupSessions(group.group.id);
@@ -78,7 +96,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
         groupId: group.group.id,
         senderId: 'system',
         senderName: 'System',
-        message: `📅 New study session: ${sessionTitle}\n⏰ ${sessionTime}\n📍 ${sessionLocation}`,
+        message: `New study session: ${sessionTitle}\nTime: ${sessionTime}\nLocation: ${sessionLocation}`,
         timestamp: new Date().toISOString(),
         type: 'announcement' as const
       };
@@ -95,6 +113,39 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
     } catch (error) {
       Alert.alert('Error', 'Failed to create session');
     }
+  };
+
+  const handleRequestJoin = async () => {
+    try {
+      const response = await RealAIService.requestJoinGroup(group.group.id);
+      if (response.success) {
+        Alert.alert('Success!', response.message || 'Join request sent!');
+        await checkMembership(); // Recheck membership status
+      } else {
+        Alert.alert('Error', response.error || 'Failed to send join request');
+      }
+    } catch (error) {
+      console.error('Error requesting to join:', error);
+      Alert.alert('Error', 'Failed to send join request');
+    }
+  };
+
+  const handleLeaveGroup = () => {
+    Alert.alert(
+      'Leave Group',
+      'Are you sure you want to leave this group?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Leave', 
+          style: 'destructive',
+          onPress: async () => {
+            // TODO: Implement leave group API call
+            navigation.navigate('MyGroups');
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -212,27 +263,21 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
             <Text style={styles.messageLeaderText}>📧 Message Group Leader</Text>
           </TouchableOpacity>
 
-          <Button 
-            title="Leave Group" 
-            variant="danger"
-            onPress={() => {
-              Alert.alert(
-                'Leave Group',
-                'Are you sure you want to leave this group?',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { 
-                    text: 'Leave', 
-                    style: 'destructive',
-                    onPress: () => {
-                      // TODO: Implement leave group
-                      navigation.navigate('MyGroups');
-                    }
-                  }
-                ]
-              );
-            }}
-          />
+          {!isLoading && (
+            isMember ? (
+              <Button 
+                title="Leave Group" 
+                variant="danger"
+                onPress={handleLeaveGroup}
+              />
+            ) : (
+              <Button 
+                title="Request to Join" 
+                variant="primary"
+                onPress={handleRequestJoin}
+              />
+            )
+          )}
         </View>
       </ScrollView>
 

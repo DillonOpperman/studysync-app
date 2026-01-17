@@ -259,6 +259,15 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         )}
 
+        {/* Friends Button */}
+        <TouchableOpacity 
+          style={styles.friendsButton}
+          onPress={() => navigation.navigate('FriendsList')}
+        >
+          <Text style={styles.friendsButtonText}>Friends</Text>
+          <Text style={styles.arrow}>→</Text>
+        </TouchableOpacity>
+
         <View style={styles.bottomPadding} />
       </ScrollView>
     </SafeAreaView>
@@ -396,7 +405,7 @@ const styles = StyleSheet.create({
   majorText: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.colors.primary,
+    color: theme.colors.text,
   } as TextStyle,
   
   editButton: {
@@ -462,7 +471,7 @@ const styles = StyleSheet.create({
   
   tagText: {
     fontSize: 14,
-    color: theme.colors.primary,
+    color: theme.colors.text,
     fontWeight: '500',
   } as TextStyle,
   
@@ -483,6 +492,31 @@ const styles = StyleSheet.create({
   scheduleTime: {
     fontSize: 14,
     color: theme.colors.textSecondary,
+  } as TextStyle,
+  
+  friendsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.white,
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+  } as ViewStyle,
+  
+  friendsButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  } as TextStyle,
+  
+  arrow: {
+    fontSize: 18,
+    color: theme.colors.primary,
+    fontWeight: 'bold',
   } as TextStyle,
   
   bottomPadding: {
