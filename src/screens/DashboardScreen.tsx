@@ -152,7 +152,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
   const handleMatchAction = async (match: MatchRecommendation) => {
     if (match.suggested) {
       // Navigate to MyGroups and open create modal
-      navigation.navigate('MyGroups', { openCreateModal: true });
+      navigation.navigate('Main', {
+        screen: 'MyGroups',
+        params: { openCreateModal: true }
+      });
     } else {
       // Send join request
       try {

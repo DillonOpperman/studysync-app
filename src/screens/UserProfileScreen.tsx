@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   majorText: {
     fontSize: 14,
     fontWeight: '600',
-    color: theme.colors.primary,
+    color: theme.colors.white,
   } as TextStyle,
   
   yearText: {
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   
   tagText: {
     fontSize: 14,
-    color: theme.colors.primary,
+    color: theme.colors.white,
     fontWeight: '500',
   } as TextStyle,
   

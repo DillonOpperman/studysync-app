@@ -70,7 +70,7 @@ export const theme: Theme = {
     surface: '#f7f5f3',
     accent: '#e8ddd4',
     text: '#2c3e50',
-    textSecondary: '#5d4e37',
+    textSecondary: '#333333',
     border: '#d4c4a8',
     success: '#228b22',
     info: '#4682b4',

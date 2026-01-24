@@ -224,7 +224,9 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({ naviga
     } else if (notification.type === 'request_approved') {
       const { groupId } = notification.data || {};
       if (groupId) {
-        navigation.navigate('MyGroups');
+        navigation.navigate('Main', {
+          screen: 'MyGroups'
+        });
       }
     }
   };

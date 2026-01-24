@@ -181,7 +181,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, onUpdate }) 
 
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>
-          ℹ️ Your .edu email helps verify you're a student. All fields marked with * are required.
+          Your .edu email helps verify you're a student. All fields marked with * are required.
         </Text>
       </View>
 
@@ -197,7 +197,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, onUpdate }) 
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Your Major</Text>
               <TouchableOpacity onPress={() => setShowMajorModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <Text style={styles.modalClose}>X</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScroll}>
@@ -235,7 +235,7 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({ data, onUpdate }) 
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Your Year</Text>
               <TouchableOpacity onPress={() => setShowYearModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <Text style={styles.modalClose}>X</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScroll}>

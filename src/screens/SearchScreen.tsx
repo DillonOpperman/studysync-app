@@ -327,7 +327,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   } as ViewStyle,
   searchButtonText: {
-    fontSize: 20,
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.white,
   } as TextStyle,
   results: {
     flex: 1,
@@ -471,7 +473,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   subjectTagText: {
     fontSize: 12,
-    color: theme.colors.primary,
+    color: theme.colors.white,
     fontWeight: '500',
   } as TextStyle,
   moreSubjects: {

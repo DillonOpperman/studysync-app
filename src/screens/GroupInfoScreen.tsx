@@ -141,7 +141,9 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
           style: 'destructive',
           onPress: async () => {
             // TODO: Implement leave group API call
-            navigation.navigate('MyGroups');
+            navigation.navigate('Main', {
+              screen: 'MyGroups'
+            });
           }
         }
       ]
@@ -205,7 +207,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
                   <Text style={styles.memberName}>{member.name}</Text>
                   <Text style={styles.memberMajor}>{member.major}</Text>
                   {member.role === 'leader' && (
-                    <Text style={styles.leaderBadge}>👑 Leader</Text>
+                    <Text style={styles.leaderBadge}>★ Leader</Text>
                   )}
                 </View>
               </View>
@@ -227,9 +229,9 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
           ) : (
             sessions.map((session) => (
               <View key={session.id} style={styles.sessionCard}>
-                <Text style={styles.sessionTitle}>📚 {session.title}</Text>
-                <Text style={styles.sessionTime}>⏰ {session.scheduledTime}</Text>
-                <Text style={styles.sessionLocation}>📍 {session.location}</Text>
+                <Text style={styles.sessionTitle}>{session.title}</Text>
+                <Text style={styles.sessionTime}>{session.scheduledTime}</Text>
+                <Text style={styles.sessionLocation}>{session.location}</Text>
                 <Text style={styles.sessionAttendees}>
                   {session.attendees.length} attending
                 </Text>
@@ -260,7 +262,7 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
               );
             }}
           >
-            <Text style={styles.messageLeaderText}>📧 Message Group Leader</Text>
+            <Text style={styles.messageLeaderText}>Message Group Leader</Text>
           </TouchableOpacity>
 
           {!isLoading && (

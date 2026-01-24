@@ -213,7 +213,7 @@ export const DirectMessageScreen: React.FC<DirectMessageScreenProps> = ({ naviga
             disabled={!newMessage.trim() || sending}
           >
             <Text style={styles.sendButtonText}>
-              {sending ? '...' : '✈️'}
+              {sending ? '...' : '>'}
             </Text>
           </TouchableOpacity>
         </View>

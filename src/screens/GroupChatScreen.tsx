@@ -31,7 +31,7 @@ interface GroupChatScreenProps {
   };
 }
 
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '🔥', '👏'];
+const REACTION_EMOJIS = ['+1', '<3', ':)', '!', '*', '++'];
 
 const MessageBubble: React.FC<{
   message: ChatMessage;
@@ -249,10 +249,6 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
             {group.group.currentMembers} members • {isTyping ? 'typing...' : 'tap for info'}
           </Text>
         </TouchableOpacity>
-
-        <TouchableOpacity onPress={openGroupInfo} style={styles.infoButton}>
-          <Text style={styles.infoButtonText}>ℹ️</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Messages */}
@@ -265,7 +261,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
         {messages.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>
-              👋 Welcome to the group chat!{'\n'}Start the conversation...
+              Welcome to the group chat!{' \n'}Start the conversation...
             </Text>
           </View>
         ) : (
@@ -297,7 +293,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
                   setShowMediaOptions(false);
                 }}
               >
-                <Text style={styles.mediaIcon}>📷</Text>
+                <Text style={styles.mediaIcon}>CAM</Text>
                 <Text style={styles.mediaLabel}>Camera</Text>
               </TouchableOpacity>
               
@@ -308,7 +304,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
                   setShowMediaOptions(false);
                 }}
               >
-                <Text style={styles.mediaIcon}>🖼️</Text>
+                <Text style={styles.mediaIcon}>PIC</Text>
                 <Text style={styles.mediaLabel}>Photos</Text>
               </TouchableOpacity>
               
@@ -319,7 +315,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
                   setShowMediaOptions(false);
                 }}
               >
-                <Text style={styles.mediaIcon}>📎</Text>
+                <Text style={styles.mediaIcon}>DOC</Text>
                 <Text style={styles.mediaLabel}>Files</Text>
               </TouchableOpacity>
               
@@ -327,7 +323,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
                 style={styles.mediaOption}
                 onPress={() => setShowMediaOptions(false)}
               >
-                <Text style={styles.mediaIcon}>❌</Text>
+                <Text style={styles.mediaIcon}>X</Text>
                 <Text style={styles.mediaLabel}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -338,7 +334,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
             style={styles.attachButton}
             onPress={() => setShowMediaOptions(!showMediaOptions)}
           >
-            <Text style={styles.attachIcon}>📎</Text>
+            <Text style={styles.attachIcon}>+</Text>
           </TouchableOpacity>
 
           {/* Message Input */}
@@ -358,7 +354,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
             onPress={sendMessage}
             disabled={!inputText.trim()}
           >
-            <Text style={styles.sendIcon}>✈️</Text>
+            <Text style={styles.sendIcon}>></Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -370,7 +366,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
             style={styles.closePreview} 
             onPress={() => setShowImagePreview(false)}
           >
-            <Text style={styles.closePreviewText}>✕</Text>
+            <Text style={styles.closePreviewText}>X</Text>
           </TouchableOpacity>
           <Image source={{ uri: previewImageUri }} style={styles.previewImage} resizeMode="contain" />
         </View>

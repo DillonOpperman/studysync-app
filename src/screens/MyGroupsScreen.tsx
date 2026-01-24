@@ -94,7 +94,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
   const loadGroups = async () => {
     try {
       setLoading(true);
-      // ✅ CORRECT: Load from backend API
+      // CORRECT: Load from backend API
       const myGroups = await RealAIService.getUserGroups();
       console.log('Loaded groups from backend:', myGroups);
       setGroups(myGroups || []);
@@ -121,7 +121,7 @@ export const MyGroupsScreen: React.FC<MyGroupsScreenProps> = ({ navigation, rout
     try {
       setCreating(true);
       
-      // ✅ CORRECT: Create group via backend API
+      // CORRECT: Create group via backend API
       const response = await RealAIService.createGroup({
         title: groupTitle,
         subject: groupSubject,
