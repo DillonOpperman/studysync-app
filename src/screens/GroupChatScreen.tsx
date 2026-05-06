@@ -12,13 +12,17 @@ import {
   Image,
   Alert,
   Modal,
+  Linking,
   ViewStyle,
   TextStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { pick, types, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
 import { theme } from '../styles/theme';
 import { ChatStorageService } from '../services/ChatStorageService';
 import { StorageService } from '../services/StorageService';
+import { RealAIService } from '../services/RealAIService';
 import { ChatMessage } from '../types/Chat';
 import { JoinedGroup } from '../types/Matching';
 
@@ -41,6 +45,13 @@ const MessageBubble: React.FC<{
 }> = ({ message, isOwnMessage, onReact, onImagePress }) => {
   const [showReactions, setShowReactions] = useState(false);
 
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1048576).toFixed(1)} MB`;
+  };
+
   return (
     <View style={[styles.messageContainer, isOwnMessage && styles.ownMessageContainer]}>
       <TouchableOpacity 
@@ -54,8 +65,24 @@ const MessageBubble: React.FC<{
             <Image source={{ uri: message.imageUri }} style={styles.messageImage} />
           </TouchableOpacity>
         )}
+
+        {message.type === 'file' && message.fileUrl && (
+          <TouchableOpacity
+            style={styles.fileCard}
+            onPress={() => Linking.openURL(message.fileUrl!)}
+          >
+            <Text style={styles.fileIcon}>📎</Text>
+            <View style={styles.fileInfo}>
+              <Text style={styles.fileName} numberOfLines={1}>{message.fileName || 'File'}</Text>
+              {message.fileSize ? (
+                <Text style={styles.fileSize}>{formatFileSize(message.fileSize)}</Text>
+              ) : null}
+            </View>
+            <Text style={styles.fileOpen}>Open</Text>
+          </TouchableOpacity>
+        )}
         
-        {message.message && <Text style={styles.messageText}>{message.message}</Text>}
+        {message.message ? <Text style={styles.messageText}>{message.message}</Text> : null}
         
         <Text style={styles.timestamp}>
           {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -111,10 +138,9 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
   const [inputText, setInputText] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
   const [currentUserName, setCurrentUserName] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, _setIsTyping] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [previewImageUri, setPreviewImageUri] = useState('');
-  const [showMediaOptions, setShowMediaOptions] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -123,7 +149,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
     
     // Mark as read
     ChatStorageService.markAsRead(group.group.id);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadChat = async () => {
     const chat = await ChatStorageService.getGroupChat(group.group.id);
@@ -168,46 +194,122 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
   };
 
   const handleImagePick = () => {
+    handleCamera();
+  };
+
+  const handleCamera = async () => {
+    console.log('camera icon pressed');
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        quality: 0.8,
+        saveToPhotos: false,
+      });
+      console.log('launchCamera result:', JSON.stringify(result));
+      if (result.didCancel) { console.log('camera cancelled'); return; }
+      if (result.errorCode) { console.error('camera error:', result.errorCode, result.errorMessage); Alert.alert('Camera Error', result.errorMessage || result.errorCode || 'Unknown error'); return; }
+      const asset = result.assets?.[0];
+      if (!asset?.uri) { console.error('no asset uri'); return; }
+      await uploadAndSendImage(asset.uri, asset.type || 'image/jpeg', asset.fileName || `photo_${Date.now()}.jpg`);
+    } catch (err) {
+      console.error('handleCamera threw:', err);
+      Alert.alert('Camera Error', String(err));
+    }
+  };
+
+  const uploadAndSendImage = async (uri: string, mimeType: string, fileName: string) => {
+    console.log('uploadAndSendImage called', { uri, mimeType, fileName });
+    try {
+      console.log('calling uploadFile...');
+      const uploadResult = await RealAIService.uploadFile(uri, mimeType, fileName, 'image');
+      console.log('uploadFile result:', JSON.stringify(uploadResult));
+      if (!uploadResult.success || !uploadResult.url) {
+        Alert.alert('Upload failed', uploadResult.error || 'Could not upload image');
+        return;
+      }
+
+      await RealAIService.sendGroupImageMessage(group.group.id, uploadResult.url);
+
+      const newMessage: ChatMessage = {
+        id: `msg_${Date.now()}`,
+        groupId: group.group.id,
+        senderId: currentUserId,
+        senderName: currentUserName,
+        message: '',
+        timestamp: new Date().toISOString(),
+        type: 'image',
+        imageUri: uploadResult.url,
+      };
+      await ChatStorageService.sendMessage(group.group.id, newMessage);
+      setMessages(prev => [...prev, newMessage]);
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    } catch (error) {
+      console.error('uploadAndSendImage error:', error);
+      Alert.alert('Upload Error', String(error));
+    }
+  };
+
+  const handleFilePick = () => {
     Alert.alert(
-      'Share Photo',
+      'Attach File',
       'Choose an option',
       [
         {
-          text: 'Camera',
-          onPress: () => handleImageSelected('camera')
+          text: 'Browse Files',
+          onPress: async () => {
+            try {
+              const [result] = await pick({ type: [types.allFiles] });
+              if (!result.uri) return;
+              await uploadAndSendFile(result.uri, result.type || 'application/octet-stream', result.name || `file_${Date.now()}`, result.size || 0);
+            } catch (err) {
+              if (isErrorWithCode(err) && err.code === errorCodes.OPERATION_CANCELED) return;
+              Alert.alert('Error', 'Could not open file picker');
+            }
+          },
         },
         {
-          text: 'Gallery',
-          onPress: () => handleImageSelected('gallery')
+          text: 'Photo Gallery',
+          onPress: async () => {
+            const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
+            if (result.didCancel || result.errorCode) return;
+            const asset = result.assets?.[0];
+            if (!asset?.uri) return;
+            await uploadAndSendImage(asset.uri, asset.type || 'image/jpeg', asset.fileName || `photo_${Date.now()}.jpg`);
+          },
         },
-        { text: 'Cancel', style: 'cancel' }
+        { text: 'Cancel', style: 'cancel' },
       ]
     );
   };
 
-  const handleImageSelected = async (source: string) => {
-    // Simulate image selection (in real app, use react-native-image-picker)
-    const mockImageUri = `https://picsum.photos/400/300?random=${Date.now()}`;
-    
-    const newMessage: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      groupId: group.group.id,
-      senderId: currentUserId,
-      senderName: currentUserName,
-      message: '',
-      timestamp: new Date().toISOString(),
-      type: 'image',
-      imageUri: mockImageUri
-    };
-
+  const uploadAndSendFile = async (uri: string, mimeType: string, fileName: string, fileSize: number) => {
     try {
+      const uploadResult = await RealAIService.uploadFile(uri, mimeType, fileName, 'file');
+      if (!uploadResult.success || !uploadResult.url) {
+        Alert.alert('Upload failed', uploadResult.error || 'Could not upload file');
+        return;
+      }
+
+      await RealAIService.sendGroupFileMessage(group.group.id, uploadResult.url, uploadResult.fileName || fileName, mimeType, uploadResult.fileSize || fileSize);
+
+      const newMessage: ChatMessage = {
+        id: `msg_${Date.now()}`,
+        groupId: group.group.id,
+        senderId: currentUserId,
+        senderName: currentUserName,
+        message: '',
+        timestamp: new Date().toISOString(),
+        type: 'file',
+        fileUrl: uploadResult.url,
+        fileName: uploadResult.fileName || fileName,
+        fileSize: uploadResult.fileSize || fileSize,
+        fileType: mimeType,
+      };
       await ChatStorageService.sendMessage(group.group.id, newMessage);
-      setMessages([...messages, newMessage]);
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      setMessages(prev => [...prev, newMessage]);
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
     } catch (error) {
-      Alert.alert('Error', 'Failed to send image');
+      Alert.alert('Error', 'Failed to send file');
     }
   };
 
@@ -283,58 +385,20 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
         keyboardVerticalOffset={90}
       >
         <View style={styles.inputContainer}>
-          {/* Media Options Modal */}
-          {showMediaOptions && (
-            <View style={styles.mediaOptionsContainer}>
-              <TouchableOpacity 
-                style={styles.mediaOption}
-                onPress={() => {
-                  Alert.alert('Camera', 'Camera feature coming soon!');
-                  setShowMediaOptions(false);
-                }}
-              >
-                <Text style={styles.mediaIcon}>CAM</Text>
-                <Text style={styles.mediaLabel}>Camera</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.mediaOption}
-                onPress={() => {
-                  Alert.alert('Photo Library', 'Photo library feature coming soon!');
-                  setShowMediaOptions(false);
-                }}
-              >
-                <Text style={styles.mediaIcon}>PIC</Text>
-                <Text style={styles.mediaLabel}>Photos</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.mediaOption}
-                onPress={() => {
-                  Alert.alert('Documents', 'Document upload feature coming soon!');
-                  setShowMediaOptions(false);
-                }}
-              >
-                <Text style={styles.mediaIcon}>DOC</Text>
-                <Text style={styles.mediaLabel}>Files</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.mediaOption}
-                onPress={() => setShowMediaOptions(false)}
-              >
-                <Text style={styles.mediaIcon}>X</Text>
-                <Text style={styles.mediaLabel}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Attachment Button */}
-          <TouchableOpacity 
+          {/* Camera Button */}
+          <TouchableOpacity
             style={styles.attachButton}
-            onPress={() => setShowMediaOptions(!showMediaOptions)}
+            onPress={handleImagePick}
           >
-            <Text style={styles.attachIcon}>+</Text>
+            <Text style={styles.attachIcon}>📷</Text>
+          </TouchableOpacity>
+
+          {/* Attachment / File Button */}
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={handleFilePick}
+          >
+            <Text style={styles.attachIcon}>📎</Text>
           </TouchableOpacity>
 
           {/* Message Input */}
@@ -354,7 +418,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
             onPress={sendMessage}
             disabled={!inputText.trim()}
           >
-            <Text style={styles.sendIcon}>></Text>
+            <Text style={styles.sendIcon}>›</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -368,7 +432,7 @@ export const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ navigation, ro
           >
             <Text style={styles.closePreviewText}>X</Text>
           </TouchableOpacity>
-          <Image source={{ uri: previewImageUri }} style={styles.previewImage} resizeMode="contain" />
+          <Image source={{ uri: previewImageUri }} style={styles.previewImageFull} resizeMode="contain" />
         </View>
       </Modal>
     </SafeAreaView>
@@ -404,7 +468,14 @@ const styles = StyleSheet.create({
   otherMessage: { backgroundColor: theme.colors.white, ...theme.shadows.light } as ViewStyle,
   senderName: { fontSize: 12, fontWeight: 'bold', color: theme.colors.primary, marginBottom: theme.spacing.xs } as TextStyle,
   messageText: { fontSize: 14, color: theme.colors.text, lineHeight: 18 } as TextStyle,
-  messageImage: { width: 250, height: 200, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.xs } as ViewStyle,
+  messageImage: { width: 250, height: 200, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.xs },
+  previewImageFull: { width: '100%', height: '100%' },
+  fileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: theme.borderRadius.md, padding: theme.spacing.sm, marginBottom: theme.spacing.xs, maxWidth: 240 } as ViewStyle,
+  fileIcon: { fontSize: 24, marginRight: theme.spacing.sm } as TextStyle,
+  fileInfo: { flex: 1 } as ViewStyle,
+  fileName: { fontSize: 13, fontWeight: '600', color: theme.colors.text } as TextStyle,
+  fileSize: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 } as TextStyle,
+  fileOpen: { fontSize: 12, color: theme.colors.primary, fontWeight: 'bold', marginLeft: theme.spacing.sm } as TextStyle,
   timestamp: { fontSize: 10, color: theme.colors.textSecondary, marginTop: theme.spacing.xs, textAlign: 'right', opacity: 0.7 } as TextStyle,
   reactionsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: theme.spacing.xs, gap: theme.spacing.xs } as ViewStyle,
   reactionBadge: { flexDirection: 'row', backgroundColor: theme.colors.accent, borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing.xs, paddingVertical: 2, alignItems: 'center' } as ViewStyle,
@@ -421,37 +492,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   } as ViewStyle,
   
-  mediaOptionsContainer: {
-    position: 'absolute',
-    bottom: 60,
-    left: 12,
-    right: 12,
-    backgroundColor: theme.colors.white,
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    ...theme.shadows.large,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-  } as ViewStyle,
-  
-  mediaOption: {
-    alignItems: 'center',
-    padding: 8,
-  } as ViewStyle,
-  
-  mediaIcon: {
-    fontSize: 32,
-    marginBottom: 4,
-  } as TextStyle,
-  
-  mediaLabel: {
-    fontSize: 11,
-    color: theme.colors.text,
-    fontWeight: '500',
-  } as TextStyle,
-  
   attachButton: {
     width: 40,
     height: 40,
@@ -459,8 +499,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
-    borderWidth: 2,
+    marginRight: 4,
+    borderWidth: 1,
     borderColor: theme.colors.border,
   } as ViewStyle,
   
@@ -511,5 +551,4 @@ const styles = StyleSheet.create({
   imagePreviewModal: { flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' } as ViewStyle,
   closePreview: { position: 'absolute', top: 40, right: 20, zIndex: 10, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: theme.borderRadius.full, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' } as ViewStyle,
   closePreviewText: { fontSize: 24, color: 'white' } as TextStyle,
-  previewImage: { width: '100%', height: '100%' } as ViewStyle,
 });

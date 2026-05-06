@@ -55,11 +55,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           routes: [{ name: 'Main' }],
         });
       } else {
-        setError(response.error || 'Login failed. Please try again.');
+        setError(response.error === 'Invalid credentials' || response.error === 'User not found' || response.error === 'Invalid email or password' 
+          ? 'Incorrect password/username. Please try again.' 
+          : response.error || 'Login failed. Please try again.');
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      setError('Invalid email or password. Please try again.');
+      setError('Incorrect password/username. Please try again.');
     } finally {
       setLoading(false);
     }

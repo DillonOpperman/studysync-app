@@ -150,6 +150,31 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
     );
   };
 
+  const handleMessageLeader = () => {
+    console.log('=== DEBUG: Group data ===');
+    console.log('Full group object:', JSON.stringify(group.group, null, 2));
+    console.log('Available keys:', Object.keys(group.group));
+    
+    const leaderId = (group.group as any).leaderId || (group.group as any).leader_id;
+    const leaderName = (group.group as any).leaderName || group.group.leader;
+    
+    console.log('Extracted leaderId:', leaderId);
+    console.log('Extracted leaderName:', leaderName);
+    
+    if (!leaderId) {
+      Alert.alert(
+        'Error', 
+        'Unable to find group leader information.\n\nCheck console for available fields.'
+      );
+      return;
+    }
+
+    navigation.navigate('DirectMessage', { 
+      userId: leaderId,
+      userName: leaderName
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -244,25 +269,11 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({ navigation, ro
         <View style={styles.actionsSection}>
           <TouchableOpacity 
             style={styles.messageLeaderButton}
-            onPress={() => {
-              Alert.alert(
-                'Message Leader',
-                `Send a message to ${group.group.leader}?`,
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Send Message',
-                    onPress: () => {
-                      // Navigate to a message/chat screen with the leader
-                      // For now, just show "Feature coming soon"
-                      Alert.alert('Coming Soon', 'Direct messaging feature will be available soon!');
-                    }
-                  }
-                ]
-              );
-            }}
+            onPress={handleMessageLeader}
           >
-            <Text style={styles.messageLeaderText}>Message Group Leader</Text>
+            <Text style={styles.messageLeaderText}>
+              {isMember ? 'Message Group Leader' : 'Ask Leader a Question'}
+            </Text>
           </TouchableOpacity>
 
           {!isLoading && (

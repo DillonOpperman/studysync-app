@@ -8,12 +8,17 @@ import {
   TextInput,
   TouchableOpacity,
   StatusBar,
+  Image,
+  Alert,
+  Linking,
   ViewStyle,
   TextStyle,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { pick, types, isErrorWithCode, errorCodes } from '@react-native-documents/picker';
 import { theme } from '../styles/theme';
 import { RealAIService } from '../services/RealAIService';
 
@@ -43,7 +48,7 @@ export const DirectMessageScreen: React.FC<DirectMessageScreenProps> = ({ naviga
     // Refresh messages every 3 seconds
     const interval = setInterval(loadMessages, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCurrentUser = async () => {
     try {
@@ -87,15 +92,122 @@ export const DirectMessageScreen: React.FC<DirectMessageScreenProps> = ({ naviga
         }, 100);
       } else {
         setNewMessage(messageText);
-        alert(response.error || 'Failed to send message');
+        Alert.alert('Error', response.error || 'Failed to send message');
       }
     } catch (error) {
       console.error('Error sending message:', error);
       setNewMessage(messageText);
-      alert('Failed to send message');
+      Alert.alert('Error', 'Failed to send message');
     } finally {
       setSending(false);
     }
+  };
+
+  const handleMediaPress = () => {
+    handleCamera();
+  };
+
+  const handleCamera = async () => {
+    console.log('camera icon pressed');
+    try {
+      const result = await launchCamera({ mediaType: 'photo', quality: 0.8, saveToPhotos: false });
+      console.log('launchCamera result:', JSON.stringify(result));
+      if (result.didCancel) { console.log('camera cancelled'); return; }
+      if (result.errorCode) { console.error('camera error:', result.errorCode, result.errorMessage); Alert.alert('Camera Error', result.errorMessage || result.errorCode || 'Unknown error'); return; }
+      const asset = result.assets?.[0];
+      if (!asset?.uri) { console.error('no asset uri'); return; }
+      await uploadAndSendImage(asset.uri, asset.type || 'image/jpeg', asset.fileName || `photo_${Date.now()}.jpg`);
+    } catch (err) {
+      console.error('handleCamera threw:', err);
+      Alert.alert('Camera Error', String(err));
+    }
+  };
+
+  const uploadAndSendImage = async (uri: string, mimeType: string, fileName: string) => {
+    console.log('uploadAndSendImage called', { uri, mimeType, fileName });
+    setSending(true);
+    try {
+      console.log('calling uploadFile...');
+      const uploadResult = await RealAIService.uploadFile(uri, mimeType, fileName, 'image');
+      console.log('uploadFile result:', JSON.stringify(uploadResult));
+      if (!uploadResult.success || !uploadResult.url) {
+        Alert.alert('Upload failed', uploadResult.error || 'Could not upload image');
+        return;
+      }
+      const response = await RealAIService.sendDirectImageMessage(userId, uploadResult.url);
+      if (response.success) {
+        await loadMessages();
+        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+      } else {
+        Alert.alert('Error', response.error || 'Failed to send image');
+      }
+    } catch (error) {
+      console.error('uploadAndSendImage error:', error);
+      Alert.alert('Upload Error', String(error));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleFilePick = () => {
+    Alert.alert(
+      'Attach File',
+      'Choose an option',
+      [
+        {
+          text: 'Browse Files',
+          onPress: async () => {
+            try {
+              const [result] = await pick({ type: [types.allFiles] });
+              if (!result.uri) return;
+              setSending(true);
+              const uploadResult = await RealAIService.uploadFile(result.uri, result.type || 'application/octet-stream', result.name || `file_${Date.now()}`, 'file');
+              if (!uploadResult.success || !uploadResult.url) {
+                Alert.alert('Upload failed', uploadResult.error || 'Could not upload file');
+                setSending(false);
+                return;
+              }
+              const response = await RealAIService.sendDirectFileMessage(
+                userId,
+                uploadResult.url,
+                uploadResult.fileName || result.name || 'file',
+                result.type || 'application/octet-stream',
+                uploadResult.fileSize || result.size || 0
+              );
+              if (response.success) {
+                await loadMessages();
+                setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+              } else {
+                Alert.alert('Error', response.error || 'Failed to send file');
+              }
+            } catch (err) {
+              if (isErrorWithCode(err) && err.code === errorCodes.OPERATION_CANCELED) return;
+              Alert.alert('Error', 'Could not open file picker');
+            } finally {
+              setSending(false);
+            }
+          },
+        },
+        {
+          text: 'Photo Gallery',
+          onPress: async () => {
+            const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
+            if (result.didCancel || result.errorCode) return;
+            const asset = result.assets?.[0];
+            if (!asset?.uri) return;
+            await uploadAndSendImage(asset.uri, asset.type || 'image/jpeg', asset.fileName || `photo_${Date.now()}.jpg`);
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1048576).toFixed(1)} MB`;
   };
 
   const formatTime = (timestamp: string) => {
@@ -123,7 +235,7 @@ export const DirectMessageScreen: React.FC<DirectMessageScreenProps> = ({ naviga
           <Text style={styles.headerTitle}>{userName}</Text>
           <Text style={styles.headerSubtitle}>Direct Message</Text>
         </View>
-        <View style={{ width: 40 }} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <KeyboardAvoidingView 
@@ -174,20 +286,40 @@ export const DirectMessageScreen: React.FC<DirectMessageScreenProps> = ({ naviga
                         isCurrentUser ? styles.messageBubbleRight : styles.messageBubbleLeft
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.messageText,
-                          isCurrentUser && styles.messageTextRight
-                        ]}
-                      >
-                        {msg.content}
-                      </Text>
+                      {msg.messageType === 'image' && msg.imageUrl ? (
+                        <Image source={{ uri: msg.imageUrl }} style={styles.messageImage} resizeMode="cover" />
+                      ) : msg.messageType === 'file' && msg.fileUrl ? (
+                        <TouchableOpacity
+                          style={styles.fileCard}
+                          onPress={() => Linking.openURL(msg.fileUrl)}
+                        >
+                          <Text style={styles.fileIcon}>📎</Text>
+                          <View style={styles.fileInfo}>
+                            <Text style={[styles.fileName, isCurrentUser && styles.fileNameRight]} numberOfLines={1}>
+                              {msg.fileName || 'File'}
+                            </Text>
+                            {msg.fileSize ? (
+                              <Text style={styles.fileSize}>{formatFileSize(msg.fileSize)}</Text>
+                            ) : null}
+                          </View>
+                          <Text style={[styles.fileOpen, isCurrentUser && styles.fileOpenRight]}>Open</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <Text
+                          style={[
+                            styles.messageText,
+                            isCurrentUser && styles.messageTextRight
+                          ]}
+                        >
+                          {msg.content}
+                        </Text>
+                      )}
                     </View>
                     <Text style={[
                       styles.messageTime,
                       isCurrentUser && styles.messageTimeRight
                     ]}>
-                      {formatTime(msg.createdAt)}
+                      {formatTime(msg.createdAt || msg.timestamp)}
                     </Text>
                   </View>
                 </View>
@@ -198,6 +330,12 @@ export const DirectMessageScreen: React.FC<DirectMessageScreenProps> = ({ naviga
 
         {/* Input */}
         <View style={styles.inputContainer}>
+          <TouchableOpacity style={styles.iconButton} onPress={handleMediaPress}>
+            <Text style={styles.iconButtonText}>📷</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={handleFilePick}>
+            <Text style={styles.iconButtonText}>📎</Text>
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -213,7 +351,7 @@ export const DirectMessageScreen: React.FC<DirectMessageScreenProps> = ({ naviga
             disabled={!newMessage.trim() || sending}
           >
             <Text style={styles.sendButtonText}>
-              {sending ? '...' : '>'}
+              {sending ? '…' : '›'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -257,6 +395,9 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     opacity: 0.8,
   } as TextStyle,
+  headerSpacer: {
+    width: 40,
+  } as ViewStyle,
   messagesContainer: {
     flex: 1,
   } as ViewStyle,
@@ -359,6 +500,20 @@ const styles = StyleSheet.create({
     borderTopColor: theme.colors.border,
     alignItems: 'flex-end',
   } as ViewStyle,
+  iconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: theme.colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  } as ViewStyle,
+  iconButtonText: {
+    fontSize: 18,
+  } as TextStyle,
   input: {
     flex: 1,
     maxHeight: 100,
@@ -384,6 +539,50 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   } as ViewStyle,
   sendButtonText: {
-    fontSize: 18,
+    fontSize: 22,
+    color: theme.colors.white,
+    fontWeight: 'bold',
+  } as TextStyle,
+  messageImage: {
+    width: 220,
+    height: 180,
+    borderRadius: 12,
+  },
+  fileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  } as ViewStyle,
+  fileIcon: {
+    fontSize: 22,
+    marginRight: 8,
+  } as TextStyle,
+  fileInfo: {
+    flex: 1,
+  } as ViewStyle,
+  fileName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.text,
+  } as TextStyle,
+  fileNameRight: {
+    color: theme.colors.white,
+  } as TextStyle,
+  fileSize: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  } as TextStyle,
+  fileOpen: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  } as TextStyle,
+  fileOpenRight: {
+    color: theme.colors.white,
+    opacity: 0.85,
   } as TextStyle,
 });

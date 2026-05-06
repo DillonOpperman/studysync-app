@@ -9,7 +9,10 @@ export interface ChatMessage {
   timestamp: string;
   type: 'text' | 'image' | 'file' | 'announcement';
   imageUri?: string;
+  fileUrl?: string;
   fileName?: string;
+  fileSize?: number;
+  fileType?: string;
   reactions?: MessageReaction[];
 }
 

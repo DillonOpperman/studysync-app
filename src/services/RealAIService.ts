@@ -58,27 +58,6 @@ export class RealAIService {
       }
     }
 
-    // Approve join request (for group leaders)
-    static async approveJoinRequest(groupId: string, userId: string): Promise<any> {
-      try {
-        const token = await this.getToken();
-        if (!token) {
-          throw new Error('Not authenticated');
-        }
-
-        const response = await fetch(`${this.baseURL}/api/groups/${groupId}/requests/${userId}/approve`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        return await response.json();
-      } catch (error) {
-        console.error('Error approving join request:', error);
-        throw error;
-      }
-    }
   private static baseURL = 'http://10.0.2.2:5000';
   private static TOKEN_KEY = 'auth_token';
 
@@ -713,28 +692,6 @@ export class RealAIService {
     }
   }
 
-  // Reject friend request
-  static async rejectFriendRequest(requestId: number): Promise<any> {
-    try {
-      const token = await this.getToken();
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch(`${this.baseURL}/api/friends/request/${requestId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error rejecting friend request:', error);
-      throw error;
-    }
-  }
-
   // Reject join request
   static async rejectJoinRequest(groupId: string, requesterId: string): Promise<any> {
     try {
@@ -756,6 +713,172 @@ export class RealAIService {
       return await response.json();
     } catch (error) {
       console.error('Error rejecting join request:', error);
+      throw error;
+    }
+  }
+
+  // Upload a file (image or document) to the backend
+  static async uploadFile(
+    uri: string,
+    mimeType: string,
+    fileName: string,
+    fileType: 'image' | 'file'
+  ): Promise<{ success: boolean; url?: string; thumbnailUrl?: string; fileName?: string; fileSize?: number; error?: string }> {
+    try {
+      const token = await this.getToken();
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        type: mimeType,
+        name: fileName,
+      } as any);
+      formData.append('fileType', fileType);
+
+      const response = await fetch(`${this.baseURL}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        return { success: false, error: errorData.error || 'Upload failed' };
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      return { success: false, error: error.message || 'Upload failed' };
+    }
+  }
+
+  // Send a group message with an image URL
+  static async sendGroupImageMessage(groupId: string, imageUrl: string): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${this.baseURL}/api/chat/${groupId}/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: '',
+          messageType: 'image',
+          imageUrl,
+        }),
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending group image message:', error);
+      throw error;
+    }
+  }
+
+  // Send a group message with a file attachment
+  static async sendGroupFileMessage(
+    groupId: string,
+    fileUrl: string,
+    fileName: string,
+    fileType: string,
+    fileSize: number
+  ): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${this.baseURL}/api/chat/${groupId}/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: '',
+          messageType: 'file',
+          fileUrl,
+          fileName,
+          fileType,
+          fileSize,
+        }),
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending group file message:', error);
+      throw error;
+    }
+  }
+
+  // Send a direct message with an image URL
+  static async sendDirectImageMessage(receiverId: string, imageUrl: string): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${this.baseURL}/api/messages/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          receiverId,
+          content: '',
+          messageType: 'image',
+          imageUrl,
+        }),
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending direct image message:', error);
+      throw error;
+    }
+  }
+
+  // Send a direct message with a file attachment
+  static async sendDirectFileMessage(
+    receiverId: string,
+    fileUrl: string,
+    fileName: string,
+    fileType: string,
+    fileSize: number
+  ): Promise<any> {
+    try {
+      const token = await this.getToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${this.baseURL}/api/messages/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          receiverId,
+          content: '',
+          messageType: 'file',
+          fileUrl,
+          fileName,
+          fileType,
+          fileSize,
+        }),
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error sending direct file message:', error);
       throw error;
     }
   }

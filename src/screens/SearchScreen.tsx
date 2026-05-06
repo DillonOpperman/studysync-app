@@ -70,6 +70,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
             currentMembers: result.currentMembers || 1,
             members: result.members || [],
             leader: result.leaderName || 'Unknown',
+            leaderId: result.leaderId || result.leader_id || result.created_by,
             createdAt: new Date().toISOString(),
             meetingTimes: []
           },
